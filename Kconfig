@@ -1,0 +1,19 @@
+menuconfig ZMK_TRACE
+    bool "ZMK trace JSONL telemetry"
+    default n
+
+if ZMK_TRACE
+
+config ZMK_TRACE_USB_CDC
+    bool "Emit trace over USB CDC/UART"
+    default y
+
+config ZMK_TRACE_INPUT_PROCESSOR
+    bool "Enable trace input processor"
+    default y
+
+config ZMK_TRACE_BUFFER_SIZE
+    int "Trace line buffer size"
+    default 192
+
+endif

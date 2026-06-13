@@ -1,0 +1,49 @@
+/*
+ * Example trace overlay for te9no/zmk-config-GeaconPolaris snippets/TB_L.
+ *
+ * Use this while debugging the left trackball snippet. It records the raw
+ * relative event, the runtime input processor output, and the mapper output.
+ */
+
+/ {
+    trace_tb_l_raw: trace_tb_l_raw {
+        compatible = "zmk,input-processor-trace";
+        stage = "tb_l_raw";
+        #input-processor-cells = <0>;
+    };
+
+    trace_tb_l_after_runtime: trace_tb_l_after_runtime {
+        compatible = "zmk,input-processor-trace";
+        stage = "tb_l_after_runtime";
+        #input-processor-cells = <0>;
+    };
+
+    trace_tb_l_after_mapper: trace_tb_l_after_mapper {
+        compatible = "zmk,input-processor-trace";
+        stage = "tb_l_after_mapper";
+        #input-processor-cells = <0>;
+    };
+
+    trace_tb_l_snipe_after_runtime: trace_tb_l_snipe_after_runtime {
+        compatible = "zmk,input-processor-trace";
+        stage = "tb_l_snipe_after_runtime";
+        #input-processor-cells = <0>;
+    };
+};
+
+&trackball_listener2 {
+    input-processors = <&trace_tb_l_raw>,
+                       <&scroll_runtime_input_processor_l>,
+                       <&trace_tb_l_after_runtime>,
+                       <&zip_xy_to_scroll_mapper>,
+                       <&trace_tb_l_after_mapper>;
+
+    scrollsnipe {
+        layers = <6>;
+        input-processors = <&trace_tb_l_raw>,
+                           <&scrollsnipe_runtime_input_processor_l>,
+                           <&trace_tb_l_snipe_after_runtime>,
+                           <&zip_xy_to_scroll_mapper>,
+                           <&trace_tb_l_after_mapper>;
+    };
+};

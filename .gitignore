@@ -1,0 +1,11 @@
+build/
+twister-out/
+*.uf2
+*.hex
+*.bin
+*.elf
+*.map
+*.log
+.west/
+.vscode/
+__pycache__/

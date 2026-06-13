@@ -1,0 +1,19 @@
+/ {
+    trace_input_raw: trace_input_raw {
+        compatible = "zmk,input-processor-trace";
+        stage = "raw";
+        #input-processor-cells = <0>;
+    };
+
+    trace_input_after_runtime: trace_input_after_runtime {
+        compatible = "zmk,input-processor-trace";
+        stage = "after_runtime";
+        #input-processor-cells = <0>;
+    };
+
+    trace_input_after_mapper: trace_input_after_mapper {
+        compatible = "zmk,input-processor-trace";
+        stage = "after_mapper";
+        #input-processor-cells = <0>;
+    };
+};

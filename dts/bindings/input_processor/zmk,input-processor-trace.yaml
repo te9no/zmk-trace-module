@@ -1,0 +1,10 @@
+description: Input Processor for emitting trace snapshots
+
+compatible: "zmk,input-processor-trace"
+
+include: ip_zero_param.yaml
+
+properties:
+  stage:
+    type: string
+    required: true
