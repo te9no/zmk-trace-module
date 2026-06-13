@@ -2,6 +2,11 @@
 
 Experimental ZMK module scaffold for streaming real keyboard traces to `zmk-gpio-sim.html`.
 
+Web UI:
+
+- GitHub Pages: https://te9no.github.io/zmk-trace-module/
+- Local file: `docs/index.html`
+
 The first target transport is USB CDC serial with JSON Lines:
 
 ```json
@@ -73,6 +78,7 @@ These examples are intentionally overlays, not permanent config. Add one while d
 - `examples/GeaconPolaris_IQS_TRACE.overlay`: Concrete IQS touch/pointing trace insertion example.
 - `src/input_processor_trace.c`: Trace processor implementation for ZMK main's `drivers/input_processor.h` API.
 - `src/event_trace.c`: Passive event listener skeleton.
+- `docs/index.html`: Browser UI for loading ZMK configs, simulating virtual input, and viewing trace JSON Lines.
 
 ## Current status
 

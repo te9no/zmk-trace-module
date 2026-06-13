@@ -1,0 +1,4 @@
+{"type":"input_stage","device":"trackball2","listener":"trackball_listener2","stage":"raw","before":{"x":12,"y":-4,"scroll_x":0,"scroll_y":0},"after":{"x":12,"y":-4,"scroll_x":0,"scroll_y":0}}
+{"type":"input_stage","device":"trackball2","listener":"trackball_listener2","stage":"after_runtime","before":{"x":12,"y":-4,"scroll_x":0,"scroll_y":0},"after":{"x":0,"y":0,"scroll_x":12,"scroll_y":-4}}
+{"type":"input_stage","device":"trackball2","listener":"trackball_listener2","stage":"after_mapper","before":{"x":0,"y":0,"scroll_x":12,"scroll_y":-4},"after":{"x":0,"y":0,"scroll_x":12,"scroll_y":-4}}
+{"type":"event","name":"layer_state_changed","data":{"layer":6,"state":true,"locked":false}}

@@ -1,0 +1,4967 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>ZMK GPIO Simulator</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f8;
+      --panel: #ffffff;
+      --ink: #1f252b;
+      --muted: #65717d;
+      --line: #d9dee3;
+      --line-strong: #b8c1ca;
+      --accent: #24745c;
+      --accent-dark: #175743;
+      --accent-soft: #dff2ec;
+      --warn: #a55b00;
+      --warn-soft: #fff0d9;
+      --danger: #a73636;
+      --code: #20262d;
+      --code-bg: #f0f2f4;
+      --shadow: 0 12px 34px rgba(31, 37, 43, 0.08);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      min-width: 320px;
+    }
+
+    button,
+    textarea,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 7px 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      border-color: #8c9aa5;
+      background: #f9fafb;
+    }
+
+    button:disabled {
+      cursor: default;
+      opacity: 0.72;
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    button.primary:disabled {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      opacity: 0.88;
+    }
+
+    button.primary:hover {
+      background: var(--accent-dark);
+      border-color: var(--accent-dark);
+    }
+
+    button.icon {
+      width: 34px;
+      padding: 0;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 4;
+    }
+
+    .topbar {
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 36px;
+      height: 36px;
+      border: 1px solid #1f252b;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 2px;
+      padding: 5px;
+      background: #ffffff;
+      flex: 0 0 auto;
+    }
+
+    .mark span {
+      background: #303840;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    main {
+      max-width: 1680px;
+      margin: 0 auto;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: minmax(340px, 0.82fr) minmax(520px, 1.18fr);
+      gap: 18px;
+    }
+
+    section,
+    aside {
+      min-width: 0;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel.collapsed > .panel-body {
+      display: none;
+    }
+
+    .panel.collapsed > .panel-head {
+      border-bottom: 0;
+    }
+
+    .input-preview-panel {
+      grid-column: 1 / -1;
+    }
+
+    .input-preview-panel .panel-body {
+      min-height: min(720px, calc(100vh - 170px));
+    }
+
+    .panel-head {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      gap: 12px;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.2;
+      letter-spacing: 0;
+      margin-right: auto;
+    }
+
+    .panel-collapse {
+      width: 30px;
+      height: 30px;
+      min-height: 30px;
+      padding: 0;
+      border-radius: 6px;
+      flex: 0 0 auto;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .panel-body {
+      padding: 14px;
+    }
+
+    .panel-body.scroll-body {
+      max-height: min(620px, calc(100vh - 160px));
+      overflow: auto;
+    }
+
+    body.zen-mode {
+      background: #eef1f3;
+    }
+
+    body.zen-mode header {
+      box-shadow: 0 8px 28px rgba(31, 37, 43, 0.08);
+    }
+
+    body.zen-mode .subtitle {
+      display: none;
+    }
+
+    body.zen-mode .top-actions > button:not(#toggleZenMode) {
+      display: none;
+    }
+
+    body.zen-mode main {
+      max-width: none;
+      min-height: calc(100vh - 61px);
+      grid-template-columns: minmax(420px, 0.92fr) minmax(560px, 1.08fr);
+      align-items: start;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    body.zen-mode section,
+    body.zen-mode aside {
+      display: contents;
+    }
+
+    body.zen-mode .panel:not(.zen-visible) {
+      display: none;
+    }
+
+    body.zen-mode .zen-visible {
+      box-shadow: 0 10px 30px rgba(31, 37, 43, 0.07);
+    }
+
+    body.zen-mode .zen-physical {
+      order: 1;
+      min-height: calc(100vh - 96px);
+    }
+
+    body.zen-mode .input-preview-panel {
+      order: 2;
+      grid-column: auto;
+      min-height: calc(100vh - 96px);
+    }
+
+    body.zen-mode .input-preview-panel .panel-body,
+    body.zen-mode .zen-physical .panel-body {
+      min-height: calc(100vh - 152px);
+    }
+
+    body.zen-mode #sensorPreviewPanel {
+      display: none;
+    }
+
+    body.zen-mode #processorPreviewPanel {
+      grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+      align-items: start;
+    }
+
+    body.zen-mode #processorPreviewPanel[hidden] {
+      display: grid;
+    }
+
+    body.zen-mode #processorPreviewPanel #processorNotice {
+      grid-column: 1 / -1;
+    }
+
+    body.zen-mode .physical-wrap {
+      min-height: calc(100vh - 220px);
+    }
+
+    .editor-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .github-form {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(92px, 130px) auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .inline-field {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    input {
+      min-height: 34px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: 7px 9px;
+      color: var(--ink);
+      background: #fbfcfd;
+    }
+
+    label.editor-label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      max-height: 460px;
+      resize: vertical;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: 11px;
+      color: var(--code);
+      background: #fbfcfd;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      line-height: 1.48;
+      tab-size: 2;
+    }
+
+    textarea:focus,
+    input:focus,
+    select:focus {
+      outline: 2px solid rgba(36, 116, 92, 0.2);
+      border-color: var(--accent);
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px;
+      min-height: 58px;
+      background: #fbfcfd;
+    }
+
+    .stat dt {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .stat dd {
+      margin: 0;
+      color: var(--ink);
+      font-weight: 750;
+      font-size: 16px;
+      overflow-wrap: anywhere;
+    }
+
+    .notice {
+      border: 1px solid #e2c792;
+      background: var(--warn-soft);
+      color: #67410d;
+      border-radius: 6px;
+      padding: 9px 10px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .notice.ok {
+      border-color: #b6dacd;
+      background: var(--accent-soft);
+      color: #174c3b;
+    }
+
+    .split-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .segmented {
+      display: inline-flex;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .segmented button {
+      border: 0;
+      border-radius: 0;
+      min-height: 32px;
+      padding: 6px 10px;
+    }
+
+    .segmented button.active {
+      background: var(--code);
+      color: #fff;
+    }
+
+    .matrix-wrap {
+      overflow: auto;
+      padding-bottom: 2px;
+    }
+
+    .physical-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background:
+        linear-gradient(#eef2f5 1px, transparent 1px),
+        linear-gradient(90deg, #eef2f5 1px, transparent 1px),
+        #fbfcfd;
+      background-size: 20px 20px;
+      min-height: 240px;
+    }
+
+    .physical-layout {
+      position: relative;
+      min-width: 100%;
+      min-height: 220px;
+      transform-origin: top left;
+    }
+
+    .physical-key {
+      position: absolute;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: #ffffff;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 2px;
+      padding: 4px;
+      color: var(--ink);
+      cursor: pointer;
+      overflow: hidden;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+
+    .physical-key:hover {
+      border-color: #7d8b98;
+    }
+
+    .physical-key.pressed {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .physical-key .binding {
+      font-size: 11px;
+      font-weight: 750;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .physical-key .pos {
+      font-size: 9px;
+      color: var(--muted);
+      line-height: 1;
+    }
+
+    .physical-module {
+      position: absolute;
+      border: 1px dashed #6f7f8f;
+      border-radius: 6px;
+      background: rgba(232, 240, 247, 0.84);
+      color: var(--ink);
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 2px;
+      padding: 6px;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .physical-module.trackball {
+      border-radius: 999px;
+      background: rgba(228, 239, 225, 0.88);
+      border-style: solid;
+    }
+
+    .physical-module .module-title {
+      font-size: 11px;
+      font-weight: 750;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .physical-module .module-type {
+      font-size: 9px;
+      color: var(--muted);
+      line-height: 1;
+    }
+
+    .matrix {
+      display: grid;
+      gap: 8px;
+      min-width: min-content;
+    }
+
+    .cell {
+      width: 74px;
+      min-height: 62px;
+      border: 1px solid var(--line-strong);
+      border-radius: 7px;
+      background: #ffffff;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 3px;
+      padding: 6px;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+    }
+
+    .cell:hover {
+      border-color: #7d8b98;
+    }
+
+    .cell.pressed {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      transform: translateY(1px);
+    }
+
+    .cell .binding {
+      color: var(--ink);
+      font-weight: 750;
+      font-size: 12px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cell .coord,
+    .cell .pos {
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.1;
+    }
+
+    .cell.unmapped {
+      opacity: 0.5;
+      background: #f1f3f5;
+    }
+
+    .readout {
+      display: grid;
+      gap: 8px;
+    }
+
+    .row-readout {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .pins {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .pin {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 38px;
+      height: 26px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #f9fafb;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .pin.on {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-weight: 750;
+    }
+
+    .layers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .layer-pill {
+      min-height: 30px;
+      border: 1px solid var(--line-strong);
+      border-radius: 15px;
+      padding: 5px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .layer-pill.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-weight: 750;
+    }
+
+    .key-output {
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfcfd;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .key-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 26px;
+      padding: 4px 8px;
+      border-radius: 5px;
+      background: #20262d;
+      color: #fff;
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+
+    .sensor-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .tab-panel {
+      display: grid;
+      gap: 10px;
+    }
+
+    .tab-panel[hidden] {
+      display: none;
+    }
+
+    .input-preview-panel #sensorPreviewPanel {
+      grid-template-columns: minmax(300px, 0.85fr) minmax(420px, 1.15fr);
+      align-items: start;
+    }
+
+    .input-preview-panel #sensorPreviewPanel #sensorNotice {
+      grid-column: 1 / -1;
+    }
+
+    .input-preview-panel #processorPreviewPanel {
+      grid-template-columns: minmax(560px, 1.4fr) minmax(340px, 0.85fr);
+      align-items: start;
+    }
+
+    .input-preview-panel #processorPreviewPanel #processorNotice {
+      grid-column: 1 / -1;
+    }
+
+    .input-preview-panel #processorPreviewPanel .processor-chain-nodes {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .input-preview-panel #processorPreviewPanel .graph-node {
+      max-width: 280px;
+    }
+
+    .sensor-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfcfd;
+      padding: 8px;
+    }
+
+    .sensor-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .sensor-meta {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      overflow-wrap: anywhere;
+    }
+
+    .pointer-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 34px);
+      grid-template-rows: repeat(3, 34px);
+      gap: 5px;
+      justify-content: start;
+      align-items: center;
+    }
+
+    .pointer-pad .empty {
+      width: 34px;
+      height: 34px;
+    }
+
+    .processor-chain-row {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .processor-chain-row.collapsed .processor-chain-lines {
+      display: none;
+    }
+
+    .processor-chain-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .processor-chain-head-main {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+
+    .processor-collapse {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--ink);
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .processor-collapse:hover {
+      border-color: #7d8b98;
+      background: #f7f9fb;
+    }
+
+    .processor-chain-lines {
+      display: grid;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .processor-chain-line {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      padding: 7px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .processor-chain-line.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .processor-chain-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      overflow-wrap: anywhere;
+    }
+
+    .processor-chain-badge {
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      padding: 2px 7px;
+      background: #ffffff;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .processor-chain-line.active .processor-chain-badge {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
+    .processor-chain-nodes {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0;
+      min-width: 0;
+    }
+
+    .graph-node {
+      position: relative;
+      max-width: 220px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: #fbfcfd;
+      padding: 6px 8px;
+      display: grid;
+      gap: 2px;
+      min-height: 42px;
+      box-shadow: 0 1px 0 rgba(31, 37, 43, 0.04);
+    }
+
+    .graph-node.collapsible {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      cursor: default;
+    }
+
+    .graph-node.collapsed {
+      min-height: 34px;
+      align-content: center;
+    }
+
+    .graph-node.collapsed .processor-node-detail {
+      display: none;
+    }
+
+    .processor-node-detail {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+
+    .processor-node {
+      max-width: 220px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: #fbfcfd;
+      padding: 6px 8px;
+      display: grid;
+      gap: 2px;
+      min-height: 42px;
+    }
+
+    .graph-node.endpoint {
+      background: #eef2f5;
+      border-style: dashed;
+    }
+
+    .graph-node.output {
+      background: #eff8f4;
+      border-color: #9bcab9;
+    }
+
+    .processor-chain-line.active .graph-node {
+      border-color: #8dbbab;
+      background: #ffffff;
+    }
+
+    .processor-chain-line.active .graph-node.endpoint {
+      background: #f8fbfa;
+    }
+
+    .processor-chain-line.active .graph-node.output {
+      border-color: var(--accent);
+      background: #ffffff;
+    }
+
+    .graph-node.trace-hit {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(36, 116, 92, 0.16);
+    }
+
+    .graph-node.trace-selected {
+      background: #fff8e8;
+      border-color: var(--warn);
+      box-shadow: 0 0 0 2px rgba(165, 91, 0, 0.18);
+    }
+
+    .processor-node-name {
+      font-size: 11px;
+      font-weight: 750;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .processor-node-kind {
+      color: var(--muted);
+      font-size: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .processor-node-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 3px;
+    }
+
+    .processor-chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 1px 6px;
+      background: #ffffff;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.45;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .processor-chip.strong {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+      background: var(--accent-soft);
+    }
+
+    .item-collapse {
+      width: 22px;
+      height: 22px;
+      min-height: 22px;
+      border-radius: 5px;
+      padding: 0;
+      font-size: 12px;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    .processor-arrow {
+      width: 34px;
+      height: 2px;
+      margin: 0 5px;
+      background: #b8c1ca;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .processor-arrow::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border-left: 8px solid #b8c1ca;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .processor-chain-line.active .processor-arrow {
+      height: 3px;
+      background: var(--accent);
+    }
+
+    .processor-chain-line.active .processor-arrow::after {
+      border-left-color: var(--accent);
+    }
+
+    .trace-grid {
+      display: grid;
+      gap: 7px;
+    }
+
+    .trace-step {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      padding: 8px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .trace-step.collapsed .trace-step-body {
+      display: none;
+    }
+
+    .trace-step-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .trace-step-body {
+      display: grid;
+      gap: 4px;
+    }
+
+    .trace-step.raw {
+      border-color: #c7d2dc;
+      background: #f7f9fb;
+    }
+
+    .trace-step.output {
+      border-color: #b6dacd;
+      background: var(--accent-soft);
+    }
+
+    .trace-step.trace-processor {
+      cursor: pointer;
+    }
+
+    .trace-step.trace-hit {
+      border-color: var(--accent);
+    }
+
+    .trace-step.trace-selected {
+      border-color: var(--warn);
+      background: #fff8e8;
+    }
+
+    .trace-title {
+      font-size: 12px;
+      font-weight: 750;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+
+    .trace-values {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .trace-values .pin {
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+
+    .capture-zone {
+      min-height: 112px;
+      border: 1px dashed var(--line-strong);
+      border-radius: 8px;
+      background: #fbfcfd;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 8px;
+      padding: 14px;
+      color: var(--muted);
+      text-align: center;
+      outline: none;
+    }
+
+    .capture-zone.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+    }
+
+    .capture-zone:focus {
+      box-shadow: 0 0 0 3px rgba(36, 116, 92, 0.18);
+    }
+
+    .processor-live-zone {
+      min-height: 76px;
+      margin-top: 8px;
+      padding: 10px;
+      justify-items: start;
+      text-align: left;
+    }
+
+    .processor-live-zone .capture-status {
+      justify-content: flex-start;
+    }
+
+    .processor-live-readout {
+      font-size: 12px;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .capture-status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .log {
+      margin: 0;
+      min-height: 210px;
+      max-height: 360px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #101418;
+      color: #dbe4ec;
+      padding: 10px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+
+    .repo-files {
+      display: grid;
+      gap: 8px;
+      max-height: 270px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px;
+      background: #fbfcfd;
+    }
+
+    .repo-file {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+      padding: 7px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    .repo-path {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      color: var(--code);
+    }
+
+    .repo-kind {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 520px;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f3f5f7;
+      color: var(--muted);
+      font-weight: 750;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      background: var(--code-bg);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .footer-note {
+      max-width: 1680px;
+      margin: 0 auto;
+      padding: 0 18px 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 980px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      body.zen-mode main {
+        grid-template-columns: 1fr;
+      }
+
+      body.zen-mode .zen-physical,
+      body.zen-mode .input-preview-panel {
+        min-height: 0;
+      }
+
+      body.zen-mode .input-preview-panel .panel-body,
+      body.zen-mode .zen-physical .panel-body {
+        min-height: 0;
+      }
+
+      body.zen-mode #processorPreviewPanel {
+        grid-template-columns: 1fr;
+      }
+
+      .input-preview-panel {
+        grid-column: auto;
+      }
+
+      .input-preview-panel .panel-body {
+        min-height: 0;
+      }
+
+      .input-preview-panel #sensorPreviewPanel,
+      .input-preview-panel #processorPreviewPanel {
+        grid-template-columns: 1fr;
+      }
+
+      .input-preview-panel #sensorPreviewPanel #sensorNotice,
+      .input-preview-panel #processorPreviewPanel #processorNotice {
+        grid-column: auto;
+      }
+
+      .status-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .github-form {
+        grid-template-columns: 1fr 110px;
+      }
+
+      .github-form button {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .top-actions {
+        justify-content: flex-start;
+      }
+
+      main {
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .panel-body {
+        padding: 12px;
+      }
+
+      .status-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cell {
+        width: 64px;
+      }
+
+      .github-form,
+      .repo-file {
+        grid-template-columns: 1fr;
+      }
+
+      .repo-path {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+        <div>
+          <h1>ZMK GPIO Simulator</h1>
+          <p class="subtitle">`.overlay` と `.keymap` から、仮想GPIO入力がどのキーイベントになるかを追跡します。</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="loadSample" title="サンプル設定を読み込み">サンプル</button>
+        <button id="resetState" title="押下状態とログをリセット">リセット</button>
+        <button id="parse" class="primary" title="設定を解析してシミュレータへ反映">解析</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="stack" aria-label="設定入力">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>GitHubから取得</h2>
+          <div class="split-controls">
+            <button id="loadRepoBundle" title="検出したoverlay/dtsiをまとめてoverlay欄へ読み込み">まとめてoverlayへ</button>
+          </div>
+        </div>
+        <div class="panel-body stack">
+          <div class="github-form">
+            <label class="inline-field">
+              sample
+              <select id="sampleRepoSelect">
+                <option value="">custom</option>
+                <option value="geacon">GeaconPolaris / main</option>
+                <option value="saa-iqs">SAA / feat/add-iqs-module-and-led-support</option>
+              </select>
+            </label>
+            <label class="inline-field">
+              repository
+              <input id="repoInput" type="text" value="te9no/zmk-config-GeaconPolaris" placeholder="owner/repo または GitHub URL">
+            </label>
+            <label class="inline-field">
+              ref
+              <input id="refInput" type="text" placeholder="main">
+            </label>
+            <button id="fetchRepo" class="primary" title="公開GitHubリポジトリからZMK設定候補を取得">取得</button>
+          </div>
+          <div id="repoNotice" class="notice">公開リポジトリの `.overlay`、`.dtsi`、`.keymap` を検出します。refを空にするとdefault branchを使います。</div>
+          <div class="github-form" aria-label="Build target selector">
+            <label class="inline-field">
+              build target
+              <select id="buildTargetSelect" disabled>
+                <option value="">build.yaml not loaded</option>
+              </select>
+            </label>
+            <label class="inline-field">
+              left target
+              <select id="leftFirmwareSelect" disabled>
+                <option value="">build.yaml not loaded</option>
+              </select>
+            </label>
+            <label class="inline-field">
+              right target
+              <select id="rightFirmwareSelect" disabled>
+                <option value="">build.yaml not loaded</option>
+              </select>
+            </label>
+            <button id="assignLeftFirmware" title="Load this build target as the left split firmware" disabled>left firmware</button>
+            <button id="assignRightFirmware" title="Load this build target as the right split firmware" disabled>right firmware</button>
+            <button id="loadBuildTarget" title="build.yamlのshield/snippetに対応するoverlayを読み込み" disabled>build targetを読み込み</button>
+          </div>
+          <div id="repoFiles" class="repo-files" aria-label="GitHubファイル候補"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>ZMK設定</h2>
+          <div class="split-controls">
+            <button id="pasteOverlay" title="クリップボードからoverlay欄へ貼り付け">overlay貼付</button>
+            <button id="pasteKeymap" title="クリップボードからkeymap欄へ貼り付け">keymap貼付</button>
+          </div>
+        </div>
+        <div class="panel-body editor-grid">
+          <label class="editor-label">
+            overlay / dtsi
+            <textarea id="overlayInput" spellcheck="false"></textarea>
+          </label>
+          <label class="editor-label">
+            keymap
+            <textarea id="keymapInput" spellcheck="false"></textarea>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>解析結果</h2>
+        </div>
+        <div class="panel-body stack">
+          <dl class="status-grid">
+            <div class="stat"><dt>kscan</dt><dd id="kscanType">-</dd></div>
+            <div class="stat"><dt>rows</dt><dd id="rowCount">-</dd></div>
+            <div class="stat"><dt>cols</dt><dd id="colCount">-</dd></div>
+            <div class="stat"><dt>layers</dt><dd id="layerCount">-</dd></div>
+            <div class="stat"><dt>physical layout</dt><dd id="physicalLayoutName">-</dd></div>
+            <div class="stat"><dt>physical keys</dt><dd id="physicalKeyCount">-</dd></div>
+            <div class="stat"><dt>sensors</dt><dd id="sensorCount">-</dd></div>
+            <div class="stat"><dt>input devices</dt><dd id="inputDeviceCount">-</dd></div>
+            <div class="stat"><dt>firmware</dt><dd id="firmwareTarget">-</dd></div>
+            <div class="stat"><dt>split role</dt><dd id="firmwareRole">-</dd></div>
+            <div class="stat"><dt>left fw</dt><dd id="leftFirmwareSlot">-</dd></div>
+            <div class="stat"><dt>right fw</dt><dd id="rightFirmwareSlot">-</dd></div>
+            <div class="stat"><dt>split pair</dt><dd id="splitPairStatus">-</dd></div>
+            <div class="stat"><dt>left cfg</dt><dd id="leftConfigSlot">-</dd></div>
+            <div class="stat"><dt>right cfg</dt><dd id="rightConfigSlot">-</dd></div>
+          </dl>
+          <div id="parseNotice" class="notice">設定を解析すると、ここに警告や対応状況が表示されます。</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>位置</th>
+                  <th>row/col</th>
+                  <th>layer 0</th>
+                  <th>有効binding</th>
+                </tr>
+              </thead>
+              <tbody id="mappingTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="stack" aria-label="シミュレータ">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>仮想GPIOマトリクス</h2>
+          <div class="segmented" aria-label="入力モード">
+            <button id="modeToggle" class="active">トグル</button>
+            <button id="modeMomentary">押下中のみ</button>
+          </div>
+        </div>
+        <div class="panel-body stack">
+          <div class="matrix-wrap">
+            <div id="matrix" class="matrix" aria-label="キーマトリクス"></div>
+          </div>
+          <div class="readout" id="gpioReadout"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Physical Layout</h2>
+        </div>
+        <div class="panel-body stack">
+          <div id="physicalNotice" class="notice">physical layout の `keys` が見つかると、ZMK Studio風の物理配置を表示します。</div>
+          <div class="physical-wrap">
+            <div id="physicalLayout" class="physical-layout" aria-label="Physical layout"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="inputPreviewPanelShell" class="panel input-preview-panel">
+        <div class="panel-head">
+          <h2>Input Preview</h2>
+          <div class="segmented" aria-label="Input preview tabs">
+            <button id="previewTabSensors" class="active">Sensors</button>
+            <button id="previewTabProcessors">Input Processors</button>
+          </div>
+        </div>
+        <div class="panel-body stack">
+          <div id="sensorNotice" class="notice">`zmk,keymap-sensors` と keymap の `sensor-bindings` を読むと、回転イベントをシミュレートできます。</div>
+          <div id="sensorList" class="sensor-list" aria-label="Sensor controls"></div>
+          <div id="pointerList" class="sensor-list" aria-label="Pointer controls"></div>
+          <div id="processorList" class="sensor-list" aria-label="Input processor pipelines"></div>
+          <div id="processorTrace" class="trace-grid" aria-label="Input processor trace"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Live Input</h2>
+          <div class="split-controls">
+            <button id="toggleKeyboardCapture" title="実キーボード入力を仮想matrix入力として扱う">Keyboard</button>
+            <button id="togglePointerCapture" title="Pointer input is always captured inside live input zones">Pointer ON</button>
+          </div>
+        </div>
+        <div class="panel-body stack">
+          <div id="liveInputNotice" class="notice">KeyboardをONにすると、実キー入力を現在のkeymapから逆引きして仮想GPIO入力にします。PointerをONにすると、この領域上のマウス移動/ホイール/クリックをinput eventとして扱います。</div>
+          <div id="liveInputTarget" class="capture-zone" tabindex="0" aria-label="Live input capture target">
+            <div class="capture-status">
+              <span id="keyboardCaptureState" class="pin">Keyboard OFF</span>
+              <span id="pointerCaptureState" class="pin on">Pointer ON</span>
+            </div>
+            <div id="liveInputReadout">ここをクリックしてから、実キーボードやマウスを操作</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Trace Device</h2>
+          <div class="split-controls">
+            <button id="connectTraceDevice" class="primary" title="Web SerialでZMK trace moduleへ接続">接続</button>
+            <button id="disconnectTraceDevice" title="Trace deviceとの接続を切断">切断</button>
+          </div>
+        </div>
+        <div class="panel-body stack">
+          <div id="traceDeviceNotice" class="notice">ZMK trace moduleがJSON LinesをUSB CDC serialへ出す場合、ここから実機traceを受信できます。localhostまたはHTTPSで開く必要があります。</div>
+          <div class="key-output" id="traceDeviceStatus"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>ZMK風イベント</h2>
+          <div class="split-controls">
+            <button id="scanOnce" title="現在のGPIO状態を1回スキャン">スキャン</button>
+            <button id="clearLog" title="イベントログを消去">ログ消去</button>
+          </div>
+        </div>
+        <div class="panel-body stack">
+          <div>
+            <div class="layers" id="layerPills"></div>
+          </div>
+          <div>
+            <div class="key-output" id="keyOutput"></div>
+          </div>
+          <pre class="log" id="eventLog" aria-live="polite"></pre>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <p class="footer-note">
+    MVPの範囲: <code>zmk,kscan-gpio-matrix</code>、<code>row-gpios</code>/<code>col-gpios</code>、<code>RC(row,col)</code>形式のmatrix transform、keymapの<code>&kp</code>/<code>&mo</code>/<code>&tog</code>/<code>&lt</code>/<code>&mt</code>/<code>&trans</code>/<code>&none</code>を簡易解釈します。tap/hold判定やcombo、macro、sensor、split通信などのZMKランタイム挙動は近似です。
+  </p>
+
+  <script>
+    const sampleOverlay = `#include <dt-bindings/zmk/matrix_transform.h>
+#include <physical_layouts.dtsi>
+
+/ {
+    chosen {
+        zmk,physical-layout = &layout0;
+    };
+
+    kscan0: kscan {
+        compatible = "zmk,kscan-gpio-matrix";
+        diode-direction = "col2row";
+        row-gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>, <&gpio0 6 GPIO_ACTIVE_HIGH>, <&gpio0 7 GPIO_ACTIVE_HIGH>;
+        col-gpios = <&gpio0 8 GPIO_ACTIVE_HIGH>, <&gpio0 9 GPIO_ACTIVE_HIGH>, <&gpio0 10 GPIO_ACTIVE_HIGH>;
+    };
+
+    left_encoder: encoder_left {
+        compatible = "alps,ec11";
+        steps = <24>;
+        status = "okay";
+    };
+
+    sensors: sensors {
+        compatible = "zmk,keymap-sensors";
+        sensors = <&left_encoder>;
+        triggers-per-rotation = <20>;
+    };
+
+    analog_input_0: analog_input_0 {
+        compatible = "dya,analog-input";
+        status = "okay";
+    };
+
+    analog_input_listener {
+        compatible = "zmk,input-listener";
+        device = <&analog_input_0>;
+        input-processors = <&zip_xy_scaler 2 1>, <&zip_xy_to_scroll_mapper>;
+        status = "okay";
+    };
+
+    default_transform: keymap_transform_0 {
+        compatible = "zmk,matrix-transform";
+        rows = <3>;
+        columns = <3>;
+        map = <
+            RC(0,0) RC(0,1) RC(0,2)
+            RC(1,0) RC(1,1) RC(1,2)
+            RC(2,0) RC(2,1) RC(2,2)
+        >;
+    };
+
+    layout0: physical_layout_0 {
+        compatible = "zmk,physical-layout";
+        kscan = <&kscan0>;
+        transform = <&default_transform>;
+        display-name = "Sample 3x3";
+        keys = <
+            &key_physical_attrs 100 100   0   0 0 0 0
+            &key_physical_attrs 100 100 100   0 0 0 0
+            &key_physical_attrs 100 100 200   0 0 0 0
+            &key_physical_attrs 100 100   0 100 0 0 0
+            &key_physical_attrs 100 100 100 100 0 0 0
+            &key_physical_attrs 100 100 200 100 0 0 0
+            &key_physical_attrs 100 100   0 200 0 0 0
+            &key_physical_attrs 100 100 100 200 0 0 0
+            &key_physical_attrs 100 100 200 200 0 0 0
+        >;
+    };
+};`;
+
+    const sampleKeymap = `#include <behaviors.dtsi>
+#include <dt-bindings/zmk/keys.h>
+
+/ {
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            bindings = <
+                &kp Q     &kp W       &kp E
+                &kp A     &mo 1       &kp D
+                &kp Z     &kp SPACE   &kp ENTER
+            >;
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
+        };
+
+        nav_layer {
+            bindings = <
+                &kp ESC   &kp UP      &tog 2
+                &kp LEFT  &trans      &kp RIGHT
+                &kp TAB   &kp DOWN    &kp BSPC
+            >;
+            sensor-bindings = <&inc_dec_kp PG_UP PG_DN>;
+        };
+
+        adjust_layer {
+            bindings = <
+                &kp N1    &kp N2      &kp N3
+                &none     &trans      &none
+                &kp C_VOL_DN &kp C_MUTE &kp C_VOL_UP
+            >;
+        };
+    };
+};`;
+
+    const state = {
+      config: null,
+      pressed: new Set(),
+      lastPressed: new Set(),
+      activeMomentary: new Map(),
+      toggledLayers: new Set(),
+      activeKeys: new Set(),
+      pressBindings: new Map(),
+      mode: "toggle",
+      defaultLayer: 0,
+      liveKeyboard: false,
+      livePointer: true,
+      livePointerDeviceName: "",
+      livePressedByCode: new Map(),
+      lastProcessorTrace: null,
+      selectedProcessorTrace: "",
+      collapsedProcessorItems: new Set(),
+      collapsedProcessorNodes: new Set(),
+      collapsedProcessorTraceItems: new Set(),
+      collapsedPanels: new Set(),
+      activePreviewTab: "sensors",
+      tracePort: null,
+      traceReader: null,
+      traceConnected: false,
+      logLines: [],
+      repoFiles: [],
+      buildYamlText: "",
+      buildTargets: [],
+      activeFirmware: null,
+      firmwareSlots: {
+        left: null,
+        right: null
+      },
+      firmwareSlotConfigs: {
+        left: null,
+        right: null
+      },
+      zenMode: false
+    };
+
+    const els = {
+      sampleRepoSelect: document.getElementById("sampleRepoSelect"),
+      repoInput: document.getElementById("repoInput"),
+      refInput: document.getElementById("refInput"),
+      fetchRepo: document.getElementById("fetchRepo"),
+      loadRepoBundle: document.getElementById("loadRepoBundle"),
+      buildTargetSelect: document.getElementById("buildTargetSelect"),
+      leftFirmwareSelect: document.getElementById("leftFirmwareSelect"),
+      rightFirmwareSelect: document.getElementById("rightFirmwareSelect"),
+      loadBuildTarget: document.getElementById("loadBuildTarget"),
+      assignLeftFirmware: document.getElementById("assignLeftFirmware"),
+      assignRightFirmware: document.getElementById("assignRightFirmware"),
+      repoNotice: document.getElementById("repoNotice"),
+      repoFiles: document.getElementById("repoFiles"),
+      overlayInput: document.getElementById("overlayInput"),
+      keymapInput: document.getElementById("keymapInput"),
+      parse: document.getElementById("parse"),
+      loadSample: document.getElementById("loadSample"),
+      resetState: document.getElementById("resetState"),
+      pasteOverlay: document.getElementById("pasteOverlay"),
+      pasteKeymap: document.getElementById("pasteKeymap"),
+      kscanType: document.getElementById("kscanType"),
+      rowCount: document.getElementById("rowCount"),
+      colCount: document.getElementById("colCount"),
+      layerCount: document.getElementById("layerCount"),
+      physicalLayoutName: document.getElementById("physicalLayoutName"),
+      physicalKeyCount: document.getElementById("physicalKeyCount"),
+      sensorCount: document.getElementById("sensorCount"),
+      inputDeviceCount: document.getElementById("inputDeviceCount"),
+      firmwareTarget: document.getElementById("firmwareTarget"),
+      firmwareRole: document.getElementById("firmwareRole"),
+      leftFirmwareSlot: document.getElementById("leftFirmwareSlot"),
+      rightFirmwareSlot: document.getElementById("rightFirmwareSlot"),
+      splitPairStatus: document.getElementById("splitPairStatus"),
+      leftConfigSlot: document.getElementById("leftConfigSlot"),
+      rightConfigSlot: document.getElementById("rightConfigSlot"),
+      parseNotice: document.getElementById("parseNotice"),
+      mappingTable: document.getElementById("mappingTable"),
+      matrix: document.getElementById("matrix"),
+      physicalNotice: document.getElementById("physicalNotice"),
+      physicalLayout: document.getElementById("physicalLayout"),
+      previewTabSensors: document.getElementById("previewTabSensors"),
+      previewTabProcessors: document.getElementById("previewTabProcessors"),
+      sensorPreviewPanel: null,
+      processorPreviewPanel: null,
+      processorNotice: null,
+      sensorNotice: document.getElementById("sensorNotice"),
+      sensorList: document.getElementById("sensorList"),
+      pointerList: document.getElementById("pointerList"),
+      processorList: document.getElementById("processorList"),
+      processorTrace: document.getElementById("processorTrace"),
+      toggleKeyboardCapture: document.getElementById("toggleKeyboardCapture"),
+      togglePointerCapture: document.getElementById("togglePointerCapture"),
+      liveInputNotice: document.getElementById("liveInputNotice"),
+      liveInputTarget: document.getElementById("liveInputTarget"),
+      keyboardCaptureState: document.getElementById("keyboardCaptureState"),
+      pointerCaptureState: document.getElementById("pointerCaptureState"),
+      liveInputReadout: document.getElementById("liveInputReadout"),
+      connectTraceDevice: document.getElementById("connectTraceDevice"),
+      disconnectTraceDevice: document.getElementById("disconnectTraceDevice"),
+      traceDeviceNotice: document.getElementById("traceDeviceNotice"),
+      traceDeviceStatus: document.getElementById("traceDeviceStatus"),
+      gpioReadout: document.getElementById("gpioReadout"),
+      eventLog: document.getElementById("eventLog"),
+      layerPills: document.getElementById("layerPills"),
+      keyOutput: document.getElementById("keyOutput"),
+      clearLog: document.getElementById("clearLog"),
+      scanOnce: document.getElementById("scanOnce"),
+      modeToggle: document.getElementById("modeToggle"),
+      modeMomentary: document.getElementById("modeMomentary")
+    };
+
+    function stripComments(text) {
+      return text
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/.*$/gm, "");
+    }
+
+    function angleValue(text, property) {
+      const re = new RegExp(property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*=\\s*<([\\s\\S]*?)>\\s*;", "m");
+      const match = text.match(re);
+      return match ? match[1] : "";
+    }
+
+    function stringValue(text, property) {
+      const re = new RegExp(property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*=\\s*\"([^\"]+)\"", "m");
+      const match = text.match(re);
+      return match ? match[1] : "";
+    }
+
+    function stringListValue(text, property) {
+      const re = new RegExp(property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*=\\s*([\\s\\S]*?);", "m");
+      const match = text.match(re);
+      return match ? Array.from(match[1].matchAll(/"([^"]+)"/g), (item) => item[1]) : [];
+    }
+
+    function lastStringValue(text, property) {
+      const re = new RegExp(property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*=\\s*\"([^\"]+)\"", "gm");
+      let match;
+      let value = "";
+      while ((match = re.exec(text))) value = match[1];
+      return value;
+    }
+
+    function countGpios(text, property) {
+      const re = new RegExp(property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*=\\s*([\\s\\S]*?);", "m");
+      const match = text.match(re);
+      if (!match) return 0;
+      const value = match[1];
+      const phandles = value.match(/<[^>]*>/g);
+      if (phandles && phandles.length) return phandles.length;
+      return (value.match(/&[A-Za-z0-9_]+/g) || []).length;
+    }
+
+    function firstCompatibleMatching(text, pattern) {
+      const re = /compatible\s*=\s*"([^"]+)"/gm;
+      let match;
+      while ((match = re.exec(text))) {
+        if (pattern.test(match[1])) return match[1];
+      }
+      return "";
+    }
+
+    function numberProperty(text, property) {
+      const value = angleValue(text, property).trim();
+      const match = value.match(/-?\d+/);
+      return match ? Number(match[0]) : 0;
+    }
+
+    function parseMatrixTransform(text, rowCount, colCount) {
+      const rows = numberProperty(text, "rows") || rowCount;
+      const columns = numberProperty(text, "columns") || colCount;
+      const mapText = angleValue(text, "map");
+      const pairs = [];
+      const re = /RC\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g;
+      let match;
+      while ((match = re.exec(mapText))) {
+        pairs.push({ row: Number(match[1]), col: Number(match[2]) });
+      }
+      if (!pairs.length && rows && columns) {
+        for (let row = 0; row < rows; row += 1) {
+          for (let col = 0; col < columns; col += 1) {
+            pairs.push({ row, col });
+          }
+        }
+      }
+      return { rows, columns, pairs };
+    }
+
+    function propertyStatement(text, property) {
+      const re = new RegExp(property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*=\\s*([\\s\\S]*?)\\s*;", "m");
+      const match = text.match(re);
+      return match ? match[1] : "";
+    }
+
+    function phandleValue(text, property) {
+      const value = propertyStatement(text, property);
+      const match = value.match(/<\s*&([A-Za-z0-9_]+)\s*>/);
+      return match ? match[1] : "";
+    }
+
+    function findReferenceBlocks(text, label) {
+      if (!label) return [];
+      const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = new RegExp("&" + escaped + "\\s*\\{", "g");
+      const blocks = [];
+      let match;
+      while ((match = re.exec(text))) {
+        const openIndex = text.indexOf("{", match.index);
+        const closeIndex = findMatchingBrace(text, openIndex);
+        if (closeIndex >= 0) {
+          blocks.push(text.slice(openIndex + 1, closeIndex));
+          re.lastIndex = closeIndex + 1;
+        }
+      }
+      return blocks;
+    }
+
+    function parsePhysicalKeys(keysText) {
+      const keys = [];
+      const segments = keysText.split(/&key_physical_attrs/g).slice(1);
+      for (const segment of segments) {
+        const nums = (segment.match(/-?\d+/g) || []).map(Number);
+        if (nums.length >= 7) {
+          const [w, h, x, y, r, rx, ry] = nums;
+          keys.push({ w, h, x, y, r, rx, ry });
+        }
+      }
+      return keys;
+    }
+
+    function parsePhysicalModules(text) {
+      const modules = [];
+      const nodeRe = /(?:([A-Za-z0-9_]+)\s*:\s*)?([A-Za-z0-9_@,-]+)\s*\{/g;
+      let match;
+      while ((match = nodeRe.exec(text))) {
+        const label = match[1] || "";
+        const nodeName = match[2] || "";
+        const openIndex = text.indexOf("{", match.index);
+        const closeIndex = findMatchingBrace(text, openIndex);
+        if (closeIndex < 0) continue;
+        const body = text.slice(openIndex + 1, closeIndex);
+        nodeRe.lastIndex = closeIndex + 1;
+
+        const compatible = stringValue(body, "compatible");
+        if (!compatible.startsWith("zmk,physical-layout-") || compatible === "zmk,physical-layout") continue;
+        if (compatible === "zmk,physical-layout-position-map") continue;
+        const size = numberProperty(body, "size");
+        const width = numberProperty(body, "width") || size || 80;
+        const height = numberProperty(body, "height") || size || width;
+        modules.push({
+          label,
+          nodeName,
+          compatible,
+          displayName: stringValue(body, "display-name") || label || nodeName || `module_${modules.length}`,
+          type: stringValue(body, "type") || compatible.replace(/^zmk,physical-layout-/, ""),
+          x: numberProperty(body, "x"),
+          y: numberProperty(body, "y"),
+          w: width,
+          h: height,
+          linkedDevices: stringListValue(body, "linked-device-identifiers"),
+          linkedSubsystems: stringListValue(body, "linked-subsystems")
+        });
+      }
+      return modules;
+    }
+
+    function parsePhysicalLayouts(text) {
+      const layouts = [];
+      const modules = parsePhysicalModules(text);
+      const nodeRe = /(?:([A-Za-z0-9_]+)\s*:\s*)?([A-Za-z0-9_@,-]+)\s*\{/g;
+      let match;
+      while ((match = nodeRe.exec(text))) {
+        const label = match[1] || "";
+        const nodeName = match[2] || "";
+        const openIndex = text.indexOf("{", match.index);
+        const closeIndex = findMatchingBrace(text, openIndex);
+        if (closeIndex < 0) continue;
+        const baseBody = text.slice(openIndex + 1, closeIndex);
+        nodeRe.lastIndex = closeIndex + 1;
+        if (stringValue(baseBody, "compatible") !== "zmk,physical-layout") continue;
+
+        const mergedBody = [
+          baseBody,
+          ...findReferenceBlocks(text, label),
+          ...findReferenceBlocks(text, nodeName)
+        ].join("\n");
+        const displayName = stringValue(mergedBody, "display-name") || label || nodeName || `layout_${layouts.length}`;
+        const keys = parsePhysicalKeys(propertyStatement(mergedBody, "keys"));
+        layouts.push({
+          label,
+          nodeName,
+          displayName,
+          transform: phandleValue(mergedBody, "transform"),
+          kscan: phandleValue(mergedBody, "kscan"),
+          keys,
+          modules
+        });
+      }
+      return layouts;
+    }
+
+    function selectPhysicalLayout(layouts, text) {
+      if (!layouts.length) return null;
+      const chosen = phandleValue(text, "zmk,physical-layout");
+      if (chosen) {
+        const chosenLayout = layouts.find((layout) => layout.label === chosen || layout.nodeName === chosen);
+        if (chosenLayout) return chosenLayout;
+      }
+      return layouts.find((layout) => layout.keys.length) || layouts[0];
+    }
+
+    function parsePhandleList(value) {
+      return (value.match(/&([A-Za-z0-9_]+)/g) || []).map((item) => item.slice(1));
+    }
+
+    function parseNumberList(value) {
+      return (value.match(/-?\d+/g) || []).map(Number);
+    }
+
+    function parseLayerTokens(value) {
+      return tokenizeBindings(value).filter((token) => !token.startsWith("&"));
+    }
+
+    function parseNumericDefines(text) {
+      const defines = new Map();
+      const re = /^\s*#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+(-?\d+)\b/gm;
+      let match;
+      while ((match = re.exec(text || ""))) {
+        defines.set(match[1], Number(match[2]));
+      }
+      return defines;
+    }
+
+    function processorCells(name, processorDefs) {
+      const predefined = {
+        zip_xy_scaler: 2,
+        zip_x_scaler: 2,
+        zip_y_scaler: 2,
+        zip_scroll_scaler: 2,
+        zip_xy_to_scroll_mapper: 0,
+        zip_xy_swap_mapper: 0,
+        zip_temp_layer: 2,
+        zip_button_behaviors: 0
+      };
+      if (Object.prototype.hasOwnProperty.call(predefined, name)) return predefined[name];
+      const def = processorDefs?.get(name);
+      if (def && Number.isFinite(def.cells)) return def.cells;
+      return 0;
+    }
+
+    function parseProcessorRefs(value, processorDefs = new Map()) {
+      const tokens = tokenizeBindings(value);
+      const refs = [];
+      for (let i = 0; i < tokens.length; i += 1) {
+        const token = tokens[i];
+        if (!token.startsWith("&")) continue;
+        const name = token.slice(1);
+        const argc = processorCells(name, processorDefs);
+        const args = [];
+        for (let j = 0; j < argc && i + 1 < tokens.length; j += 1) {
+          if (tokens[i + 1].startsWith("&")) break;
+          args.push(tokens[++i]);
+        }
+        refs.push({ name, args });
+      }
+      return refs;
+    }
+
+    function baseProcessorDefs(nodes) {
+      const defs = new Map([
+        ["zip_xy_scaler", { name: "zip_xy_scaler", compatible: "zmk,input-processor-scaler", cells: 2, builtin: true }],
+        ["zip_x_scaler", { name: "zip_x_scaler", compatible: "zmk,input-processor-scaler", cells: 2, builtin: true }],
+        ["zip_y_scaler", { name: "zip_y_scaler", compatible: "zmk,input-processor-scaler", cells: 2, builtin: true }],
+        ["zip_scroll_scaler", { name: "zip_scroll_scaler", compatible: "zmk,input-processor-scaler", cells: 2, builtin: true }],
+        ["zip_xy_to_scroll_mapper", { name: "zip_xy_to_scroll_mapper", compatible: "zmk,input-processor-code-mapper", cells: 0, builtin: true }],
+        ["zip_xy_swap_mapper", { name: "zip_xy_swap_mapper", compatible: "zmk,input-processor-code-mapper", cells: 0, builtin: true }],
+        ["zip_temp_layer", { name: "zip_temp_layer", compatible: "zmk,input-processor-temp-layer", cells: 2, builtin: true }],
+        ["zip_button_behaviors", { name: "zip_button_behaviors", compatible: "zmk,input-processor-behaviors", cells: 0, builtin: true }]
+      ]);
+
+      nodes.forEach((node) => {
+        const body = node.body;
+        const compatible = stringValue(body, "compatible");
+        if (!compatible.includes("input-processor")) return;
+        const name = node.label || node.nodeName;
+        defs.set(name, {
+          name,
+          compatible,
+          cells: numberProperty(body, "#input-processor-cells"),
+          label: stringValue(body, "processor-label") || name,
+          scaleDivisor: numberProperty(body, "scale-divisor") || 1,
+          scaleMultiplier: numberProperty(body, "scale-multiplier") || 1,
+          xyToScroll: /xy-to-scroll-enabled/.test(body),
+          trackRemainders: /track-remainders/.test(body),
+          rawBody: body
+        });
+      });
+      return defs;
+    }
+
+    function statusValue(text) {
+      return lastStringValue(text, "status") || "okay";
+    }
+
+    function parseLabeledNodes(text) {
+      const nodes = [];
+      const seen = new Set();
+      const nodeRe = /(^|[\s;{}])(?:([A-Za-z_][A-Za-z0-9_]*)\s*:\s*)?([A-Za-z_][A-Za-z0-9_@,-]*)\s*\{/g;
+      let match;
+      while ((match = nodeRe.exec(text))) {
+        const label = match[2] || "";
+        const nodeName = match[3] || "";
+        const openIndex = text.indexOf("{", match.index + match[1].length);
+        const closeIndex = findMatchingBrace(text, openIndex);
+        if (closeIndex < 0) continue;
+        const body = text.slice(openIndex + 1, closeIndex);
+        nodeRe.lastIndex = openIndex + 1;
+        const key = `${label}:${nodeName}:${openIndex}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        nodes.push({ label, nodeName, body, compatible: stringValue(body, "compatible") });
+      }
+      return nodes;
+    }
+
+    function mergedNodeBody(text, node) {
+      return [
+        node.body,
+        ...findReferenceBlocks(text, node.label),
+        ...findReferenceBlocks(text, node.nodeName)
+      ].join("\n");
+    }
+
+    function parseSensors(text) {
+      const nodes = parseLabeledNodes(text);
+      const processorDefs = baseProcessorDefs(nodes);
+      const nodeByName = new Map();
+      nodes.forEach((node) => {
+        if (node.label) nodeByName.set(node.label, node);
+        if (node.nodeName) nodeByName.set(node.nodeName, node);
+      });
+
+      const sensorConfig = nodes.find((node) => stringValue(node.body, "compatible") === "zmk,keymap-sensors");
+      const sensorNames = sensorConfig ? parsePhandleList(propertyStatement(mergedNodeBody(text, sensorConfig), "sensors")) : [];
+      const triggersPerRotation = sensorConfig ? numberProperty(mergedNodeBody(text, sensorConfig), "triggers-per-rotation") : 0;
+      const sensors = sensorNames.map((name, index) => {
+        const node = nodeByName.get(name);
+        const body = node ? mergedNodeBody(text, node) : "";
+        return {
+          name,
+          index,
+          displayName: stringValue(body, "label") || name,
+          compatible: stringValue(body, "compatible") || "unknown",
+          status: statusValue(body),
+          steps: numberProperty(body, "steps"),
+          triggersPerRotation
+        };
+      });
+
+      const inputDevices = [];
+      nodes.forEach((node) => {
+        const body = mergedNodeBody(text, node);
+        const compatible = stringValue(body, "compatible");
+        if (!compatible) return;
+        const isPointerish = /analog-input|pmw|pimoroni|cirque/i.test(compatible);
+        if (!isPointerish) return;
+        inputDevices.push({
+          name: node.label || node.nodeName,
+          displayName: node.label || node.nodeName,
+          compatible,
+          status: statusValue(body),
+          xCode: stringValue(body, "x-input-code") || "",
+          yCode: stringValue(body, "y-input-code") || ""
+        });
+      });
+
+      const listeners = nodes
+        .filter((node) => stringValue(node.body, "compatible") === "zmk,input-listener")
+        .map((node) => {
+          const body = mergedNodeBody(text, node);
+          const childNodes = parseLabeledNodes(body);
+          const overrides = childNodes
+            .filter((child) => propertyStatement(child.body, "layers") && propertyStatement(child.body, "input-processors"))
+            .map((child) => ({
+              name: child.label || child.nodeName,
+              rawLayers: parseLayerTokens(propertyStatement(child.body, "layers")),
+              layers: parseNumberList(propertyStatement(child.body, "layers")),
+              processors: parseProcessorRefs(propertyStatement(child.body, "input-processors"), processorDefs)
+            }));
+          return {
+            name: node.label || node.nodeName,
+            device: phandleValue(body, "device"),
+            status: statusValue(body),
+            processors: parseProcessorRefs(propertyStatement(body, "input-processors"), processorDefs),
+            overrides
+          };
+        });
+
+      return { sensors, inputDevices, listeners, processorDefs };
+    }
+
+    function tokenizeBindings(text) {
+      return text
+        .replace(/[<>{};]/g, " ")
+        .split(/\s+/)
+        .map((token) => token.trim())
+        .filter(Boolean);
+    }
+
+    function argsForBehavior(name) {
+      if (["&none", "&trans"].includes(name)) return 0;
+      if (["&kp", "&mo", "&tog", "&to", "&sl", "&df"].includes(name)) return 1;
+      if (["&lt", "&mt"].includes(name)) return 2;
+      return -1;
+    }
+
+    function parseBindingTokens(tokens) {
+      const bindings = [];
+      for (let i = 0; i < tokens.length; i += 1) {
+        const token = tokens[i];
+        if (!token.startsWith("&")) continue;
+        const argc = argsForBehavior(token);
+        const args = [];
+        if (argc >= 0) {
+          for (let j = 0; j < argc && i + 1 < tokens.length; j += 1) {
+            if (tokens[i + 1].startsWith("&")) break;
+            args.push(tokens[++i]);
+          }
+        } else {
+          while (i + 1 < tokens.length && !tokens[i + 1].startsWith("&")) {
+            args.push(tokens[++i]);
+          }
+        }
+        bindings.push({ behavior: token, args });
+      }
+      return bindings;
+    }
+
+    function sensorArgsForBehavior(name, behaviorDefs) {
+      if (name === "&inc_dec_kp") return 2;
+      const def = behaviorDefs?.get(name.replace(/^&/, ""));
+      if (def && Number.isFinite(def.sensorCells)) return def.sensorCells;
+      return 2;
+    }
+
+    function parseSensorBindingTokens(tokens, behaviorDefs = new Map()) {
+      const bindings = [];
+      for (let i = 0; i < tokens.length; i += 1) {
+        const token = tokens[i];
+        if (!token.startsWith("&")) continue;
+        const argc = sensorArgsForBehavior(token, behaviorDefs);
+        const args = [];
+        for (let j = 0; j < argc && i + 1 < tokens.length; j += 1) {
+          if (tokens[i + 1].startsWith("&")) break;
+          args.push(tokens[++i]);
+        }
+        bindings.push({ behavior: token, args });
+      }
+      return bindings;
+    }
+
+    function findMatchingBrace(text, openIndex) {
+      let depth = 0;
+      for (let i = openIndex; i < text.length; i += 1) {
+        if (text[i] === "{") depth += 1;
+        if (text[i] === "}") {
+          depth -= 1;
+          if (depth === 0) return i;
+        }
+      }
+      return -1;
+    }
+
+    function extractKeymapBody(clean) {
+      const keymapMatch = clean.match(/\bkeymap\s*\{/m);
+      if (!keymapMatch) return clean;
+      const openIndex = clean.indexOf("{", keymapMatch.index);
+      const closeIndex = findMatchingBrace(clean, openIndex);
+      return closeIndex >= 0 ? clean.slice(openIndex + 1, closeIndex) : clean.slice(openIndex + 1);
+    }
+
+    function parseBehaviorDefinitions(text) {
+      const clean = stripComments(text);
+      const defs = new Map();
+      const re = /(^|[\s;{}])([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([A-Za-z_][A-Za-z0-9_@,-]*)\s*\{/g;
+      let match;
+      while ((match = re.exec(clean))) {
+        const label = match[2];
+        const openIndex = clean.indexOf("{", match.index + match[1].length);
+        const closeIndex = findMatchingBrace(clean, openIndex);
+        if (closeIndex < 0) continue;
+        const body = clean.slice(openIndex + 1, closeIndex);
+        re.lastIndex = openIndex + 1;
+        const compatible = stringValue(body, "compatible");
+        if (!compatible.includes("sensor-rotate")) continue;
+        const sensorCells = numberProperty(body, "#sensor-binding-cells");
+        const cwTokens = tokenizeBindings(propertyStatement(body, "cw-binding"));
+        const ccwTokens = tokenizeBindings(propertyStatement(body, "ccw-binding"));
+        defs.set(label, {
+          label,
+          compatible,
+          sensorCells,
+          cwBinding: parseBindingTokens(cwTokens)[0] || null,
+          ccwBinding: parseBindingTokens(ccwTokens)[0] || null
+        });
+      }
+      return defs;
+    }
+
+    function extractKeymapLayers(text, behaviorDefs = new Map()) {
+      const clean = stripComments(text);
+      const keymapBody = extractKeymapBody(clean);
+      const layers = [];
+      const nodeRe = /([A-Za-z0-9_]+)\s*\{/gm;
+      let match;
+      while ((match = nodeRe.exec(keymapBody))) {
+        const nodeName = match[1];
+        if (nodeName === "keymap") continue;
+        const openIndex = keymapBody.indexOf("{", match.index);
+        const closeIndex = findMatchingBrace(keymapBody, openIndex);
+        if (closeIndex < 0) continue;
+        const body = keymapBody.slice(openIndex + 1, closeIndex);
+        const bindingsMatch = body.match(/bindings\s*=\s*<([\s\S]*?)>\s*;/m);
+        const sensorBindingsMatch = body.match(/sensor-bindings\s*=\s*<([\s\S]*?)>\s*;/m);
+        nodeRe.lastIndex = closeIndex + 1;
+        if (!bindingsMatch) continue;
+        const tokens = tokenizeBindings(bindingsMatch[1]);
+        const sensorTokens = sensorBindingsMatch ? tokenizeBindings(sensorBindingsMatch[1]) : [];
+        layers.push({
+          nodeName,
+          label: stringValue(body, "label"),
+          name: stringValue(body, "label") || nodeName.replace(/_layer$/, "") || `layer_${layers.length}`,
+          bindings: parseBindingTokens(tokens),
+          sensorBindings: parseSensorBindingTokens(sensorTokens, behaviorDefs)
+        });
+      }
+      return layers;
+    }
+
+    function addLayerAlias(map, key, index) {
+      if (!key) return;
+      const variants = new Set([
+        key,
+        key.replace(/^_+/, ""),
+        key.replace(/_layer$/i, ""),
+        key.replace(/^_+/, "").replace(/_layer$/i, "")
+      ]);
+      variants.forEach((variant) => {
+        if (!variant) return;
+        map.set(variant, index);
+        map.set(variant.toLowerCase(), index);
+        map.set(variant.toUpperCase(), index);
+      });
+    }
+
+    function buildLayerAliases(layers, defines) {
+      const aliases = new Map();
+      defines.forEach((index, key) => addLayerAlias(aliases, key, index));
+      layers.forEach((layer, index) => {
+        addLayerAlias(aliases, String(index), index);
+        addLayerAlias(aliases, layer.nodeName, index);
+        addLayerAlias(aliases, layer.name, index);
+        addLayerAlias(aliases, layer.label, index);
+      });
+      return aliases;
+    }
+
+    function layerIndexFromToken(token, aliases) {
+      if (token === undefined || token === null) return null;
+      const raw = String(token);
+      const numeric = Number(raw);
+      if (Number.isFinite(numeric)) return numeric;
+      return aliases?.get(raw)
+        ?? aliases?.get(raw.replace(/^_+/, ""))
+        ?? aliases?.get(raw.toLowerCase())
+        ?? null;
+    }
+
+    function resolveLayerTokenList(tokens, aliases) {
+      return (tokens || [])
+        .map((token) => layerIndexFromToken(token, aliases))
+        .filter((index) => Number.isFinite(index));
+    }
+
+    function resolveInputListenerLayerAliases(sensorInfo, aliases) {
+      (sensorInfo?.listeners || []).forEach((listener) => {
+        (listener.overrides || []).forEach((override) => {
+          const resolved = resolveLayerTokenList(override.rawLayers, aliases);
+          if (resolved.length) override.layers = resolved;
+        });
+      });
+    }
+
+    function parseConfigFromText(overlayText, keymap) {
+      const overlay = stripComments(overlayText);
+      const compatible = firstCompatibleMatching(overlay, /zmk,kscan/) || stringValue(overlay, "compatible") || "unknown";
+      const rowCount = countGpios(overlay, "row-gpios") || numberProperty(overlay, "rows") || 1;
+      const colCount = countGpios(overlay, "col-gpios") || numberProperty(overlay, "columns") || 1;
+      const diode = stringValue(overlay, "diode-direction") || "unspecified";
+      const transform = parseMatrixTransform(overlay, rowCount, colCount);
+      const physicalLayouts = parsePhysicalLayouts(overlay);
+      const physicalLayout = selectPhysicalLayout(physicalLayouts, overlay);
+      const behaviorDefs = parseBehaviorDefinitions(`${overlay}\n${keymap}`);
+      const sensorInfo = parseSensors(overlay);
+      const layers = extractKeymapLayers(keymap, behaviorDefs);
+      const layerDefines = parseNumericDefines(`${overlayText}\n${keymap}`);
+      const layerAliases = buildLayerAliases(layers, layerDefines);
+      resolveInputListenerLayerAliases(sensorInfo, layerAliases);
+      const warnings = [];
+
+      if (!compatible.includes("zmk,kscan-gpio-matrix")) {
+        warnings.push(`kscan compatible は ${compatible} です。このMVPはGPIO matrixを主対象にしています。`);
+      }
+      if (!transform.pairs.length) {
+        warnings.push("matrix transformが見つからないため、row-majorの仮マップを使います。");
+      }
+      if (!layers.length) {
+        warnings.push("keymap layerのbindingsが見つかりません。");
+      }
+      const sensorBindingCount = layers.reduce((total, layer) => total + (layer.sensorBindings?.length || 0), 0);
+      if (sensorBindingCount && !sensorInfo.sensors.length) {
+        warnings.push("sensor-bindingsがありますが、zmk,keymap-sensors のsensorsが見つかりません。");
+      }
+      if (!physicalLayouts.length) {
+        warnings.push("physical layoutが見つかりません。");
+      } else if (!physicalLayout?.keys.length) {
+        warnings.push(`physical layout (${physicalLayout?.displayName || "unknown"}) にkeysがありません。`);
+      } else if (physicalLayout.keys.length !== transform.pairs.length) {
+        warnings.push(`physical keys (${physicalLayout.keys.length}) とmatrix position (${transform.pairs.length}) の数が違います。`);
+      }
+      const maxPositions = transform.pairs.length || rowCount * colCount;
+      layers.forEach((layer, index) => {
+        if (layer.bindings.length < maxPositions) {
+          warnings.push(`layer ${index} (${layer.name}) のbinding数がmatrix position数より少ないです。`);
+        }
+      });
+
+      return {
+        compatible,
+        rowCount,
+        colCount,
+        diode,
+        transform,
+        physicalLayouts,
+        physicalLayout,
+        behaviorDefs,
+        layerDefines,
+        layerAliases,
+        sensorInfo,
+        layers,
+        warnings
+      };
+    }
+
+    function parseConfig() {
+      state.config = parseConfigFromText(els.overlayInput.value, els.keymapInput.value);
+      const { rowCount, colCount, layers, diode } = state.config;
+      resetRuntime(false);
+      renderAll();
+      log(`CONFIG parsed: ${rowCount} rows x ${colCount} cols, ${layers.length} layer(s), diode=${diode}`);
+    }
+
+    function coordKey(row, col) {
+      return `${row}:${col}`;
+    }
+
+    function positionForCoord(row, col) {
+      if (!state.config) return -1;
+      return state.config.transform.pairs.findIndex((entry) => entry.row === row && entry.col === col);
+    }
+
+    function bindingAt(layerIndex, pos) {
+      const layer = state.config?.layers[layerIndex];
+      if (!layer) return null;
+      return layer.bindings[pos] || null;
+    }
+
+    function activeLayerIndexes() {
+      const count = state.config?.layers.length || 0;
+      const defaultLayer = state.defaultLayer >= 0 && state.defaultLayer < count ? state.defaultLayer : 0;
+      const active = new Set([defaultLayer]);
+      for (const layer of state.toggledLayers) {
+        if (layer >= 0 && layer < count) active.add(layer);
+      }
+      for (const layer of state.activeMomentary.values()) {
+        if (layer >= 0 && layer < count) active.add(layer);
+      }
+      return [...active].sort((a, b) => a - b);
+    }
+
+    function resolveBinding(pos) {
+      const active = activeLayerIndexes().sort((a, b) => b - a);
+      for (const layerIndex of active) {
+        const binding = bindingAt(layerIndex, pos);
+        if (!binding) continue;
+        if (binding.behavior === "&trans") continue;
+        return { layerIndex, binding };
+      }
+      const defaultLayer = state.defaultLayer >= 0 && state.defaultLayer < (state.config?.layers.length || 0) ? state.defaultLayer : 0;
+      return { layerIndex: defaultLayer, binding: bindingAt(defaultLayer, pos) };
+    }
+
+    function bindingLabel(binding) {
+      if (!binding) return "-";
+      if (binding.behavior === "&kp") return binding.args[0] || "KP";
+      if (binding.behavior === "&mo") return `MO ${binding.args[0] || "?"}`;
+      if (binding.behavior === "&tog") return `TOG ${binding.args[0] || "?"}`;
+      if (binding.behavior === "&to") return `TO ${binding.args[0] || "?"}`;
+      if (binding.behavior === "&sl") return `SL ${binding.args[0] || "?"}`;
+      if (binding.behavior === "&df") return `DF ${binding.args[0] || "?"}`;
+      if (binding.behavior === "&lt") return `LT ${binding.args[0] || "?"}/${binding.args[1] || "?"}`;
+      if (binding.behavior === "&mt") return `MT ${binding.args[0] || "?"}/${binding.args[1] || "?"}`;
+      if (binding.behavior === "&msc") return `MSC ${binding.args[0] || "?"}`;
+      if (binding.behavior === "&mmv") return `MMV ${binding.args[0] || "?"}`;
+      if (binding.behavior === "&mkp") return `MKP ${binding.args[0] || "?"}`;
+      if (binding.behavior === "&bt") return `BT ${binding.args.join(" ")}`.trim();
+      if (binding.behavior === "&trans") return "trans";
+      if (binding.behavior === "&none") return "none";
+      return `${binding.behavior.replace(/^&/, "")} ${binding.args.join(" ")}`.trim();
+    }
+
+    function log(message) {
+      const time = new Date().toLocaleTimeString("ja-JP", { hour12: false });
+      state.logLines.unshift(`[${time}] ${message}`);
+      state.logLines = state.logLines.slice(0, 180);
+      els.eventLog.textContent = state.logLines.join("\n");
+    }
+
+    function pressSwitch(row, col) {
+      const key = coordKey(row, col);
+      if (state.pressed.has(key)) return;
+      state.pressed.add(key);
+      handleKscan(row, col, true);
+      renderAll();
+    }
+
+    function releaseSwitch(row, col) {
+      const key = coordKey(row, col);
+      if (!state.pressed.has(key)) return;
+      state.pressed.delete(key);
+      handleKscan(row, col, false);
+      renderAll();
+    }
+
+    function toggleSwitch(row, col) {
+      const key = coordKey(row, col);
+      if (state.pressed.has(key)) {
+        releaseSwitch(row, col);
+      } else {
+        pressSwitch(row, col);
+      }
+    }
+
+    function handleKscan(row, col, pressed) {
+      const key = coordKey(row, col);
+      const pos = positionForCoord(row, col);
+      log(`GPIO ${pressed ? "closed" : "open"} row=${row} col=${col}`);
+      if (pos < 0) {
+        log(`KSCAN ignored: RC(${row},${col}) is not in matrix transform`);
+        return;
+      }
+
+      if (pressed) {
+        const resolved = resolveBinding(pos);
+        state.pressBindings.set(key, resolved);
+        applyBindingDown(pos, resolved.layerIndex, resolved.binding);
+      } else {
+        const resolved = state.pressBindings.get(key) || resolveBinding(pos);
+        applyBindingUp(pos, resolved.layerIndex, resolved.binding);
+        state.pressBindings.delete(key);
+        if (resolved.binding?.behavior !== "&sl") clearStickyLayers();
+      }
+    }
+
+    function layerName(index) {
+      return state.config?.layers[index]?.name || `layer_${index}`;
+    }
+
+    function numberArg(binding, index) {
+      const value = Number(binding?.args[index]);
+      return Number.isFinite(value) ? value : null;
+    }
+
+    function layerArg(binding, index) {
+      return layerIndexFromToken(binding?.args[index], state.config?.layerAliases);
+    }
+
+    function renderLayerDependentViews() {
+      renderMatrix();
+      renderPhysicalLayout();
+      renderSensors();
+      renderProcessorTrace();
+      renderLayers();
+      renderMappingTable();
+    }
+
+    function clearStickyLayers() {
+      const stickyKeys = [...state.activeMomentary.keys()].filter((key) => key.startsWith("sticky:"));
+      stickyKeys.forEach((key) => state.activeMomentary.delete(key));
+      if (stickyKeys.length) {
+        log("LAYER sticky off");
+        renderLayerDependentViews();
+      }
+    }
+
+    function applyBindingDown(pos, layerIndex, binding) {
+      if (!binding) {
+        log(`POS ${pos}: no binding`);
+        return;
+      }
+      const label = bindingLabel(binding);
+      log(`KSCAN down pos=${pos} layer=${layerIndex} binding=${label}`);
+      if (binding.behavior === "&kp") {
+        const key = binding.args[0] || "UNKNOWN";
+        state.activeKeys.add(key);
+        log(`HID key down ${key}`);
+      } else if (binding.behavior === "&mkp") {
+        const button = binding.args[0] || "MB?";
+        state.activeKeys.add(`MOUSE_${button}`);
+        log(`HID mouse button down ${button}`);
+      } else if (binding.behavior === "&msc") {
+        const dir = binding.args[0] || "SCROLL";
+        log(`HID mouse scroll ${dir}`);
+      } else if (binding.behavior === "&mmv") {
+        const dir = binding.args[0] || "MOVE";
+        log(`HID mouse move ${dir}`);
+      } else if (binding.behavior === "&bt") {
+        log(`BT behavior ${binding.args.join(" ") || "(no args)"}`);
+      } else if (binding.behavior === "&mo") {
+        const target = layerArg(binding, 0);
+        if (target !== null) {
+          state.activeMomentary.set(`pos:${pos}`, target);
+          log(`LAYER momentary on ${target} (${layerName(target)})`);
+          renderLayerDependentViews();
+        }
+      } else if (binding.behavior === "&tog") {
+        const target = layerArg(binding, 0);
+        if (target !== null) {
+          if (state.toggledLayers.has(target)) {
+            state.toggledLayers.delete(target);
+            log(`LAYER toggle off ${target} (${layerName(target)})`);
+          } else {
+            state.toggledLayers.add(target);
+            log(`LAYER toggle on ${target} (${layerName(target)})`);
+          }
+          renderLayerDependentViews();
+        }
+      } else if (binding.behavior === "&to") {
+        const target = layerArg(binding, 0);
+        if (target !== null) {
+          state.toggledLayers.clear();
+          state.activeMomentary.clear();
+          if (target !== 0) state.toggledLayers.add(target);
+          log(`LAYER switch to ${target} (${layerName(target)})`);
+          renderLayerDependentViews();
+        }
+      } else if (binding.behavior === "&df") {
+        const target = layerArg(binding, 0);
+        const count = state.config?.layers.length || 0;
+        if (target !== null && target >= 0 && target < count) {
+          state.defaultLayer = target;
+          state.toggledLayers.clear();
+          state.activeMomentary.clear();
+          log(`LAYER default ${target} (${layerName(target)})`);
+          renderLayerDependentViews();
+        }
+      } else if (binding.behavior === "&sl") {
+        const target = layerArg(binding, 0);
+        if (target !== null) {
+          state.activeMomentary.set(`sticky:${pos}`, target);
+          log(`LAYER sticky on ${target} (${layerName(target)})`);
+          renderLayerDependentViews();
+        }
+      } else if (binding.behavior === "&lt") {
+        const target = layerArg(binding, 0);
+        if (target !== null) {
+          state.activeMomentary.set(`pos:${pos}`, target);
+          log(`LAYER-tap treated as hold: layer ${target} (${layerName(target)})`);
+          renderLayerDependentViews();
+        }
+      } else if (binding.behavior === "&mt") {
+        const mod = binding.args[0] || "MOD";
+        const key = binding.args[1] || "UNKNOWN";
+        state.activeKeys.add(`${mod}+${key}`);
+        log(`MOD-tap treated as key: ${mod}+${key}`);
+      } else if (binding.behavior === "&none") {
+        log(`POS ${pos}: none`);
+      } else if (binding.behavior === "&trans") {
+        log(`POS ${pos}: transparent`);
+      } else {
+        log(`BEHAVIOR ${binding.behavior} args=${binding.args.join(",")} is logged only`);
+      }
+    }
+
+    function applyBindingUp(pos, layerIndex, binding) {
+      if (!binding) return;
+      const label = bindingLabel(binding);
+      log(`KSCAN up pos=${pos} layer=${layerIndex} binding=${label}`);
+      if (binding.behavior === "&kp") {
+        const key = binding.args[0] || "UNKNOWN";
+        state.activeKeys.delete(key);
+        log(`HID key up ${key}`);
+      } else if (binding.behavior === "&mkp") {
+        const button = binding.args[0] || "MB?";
+        state.activeKeys.delete(`MOUSE_${button}`);
+        log(`HID mouse button up ${button}`);
+      } else if (binding.behavior === "&mo" || binding.behavior === "&lt") {
+        const target = state.activeMomentary.get(`pos:${pos}`);
+        state.activeMomentary.delete(`pos:${pos}`);
+        if (target !== undefined) log(`LAYER momentary off ${target} (${layerName(target)})`);
+        renderLayerDependentViews();
+      } else if (binding.behavior === "&mt") {
+        const mod = binding.args[0] || "MOD";
+        const key = binding.args[1] || "UNKNOWN";
+        state.activeKeys.delete(`${mod}+${key}`);
+        log(`MOD-tap key up ${mod}+${key}`);
+      }
+    }
+
+    function scanOnce() {
+      if (!state.config) return;
+      log("SCAN begin");
+      for (let row = 0; row < state.config.rowCount; row += 1) {
+        const activeCols = [];
+        for (let col = 0; col < state.config.colCount; col += 1) {
+          if (state.pressed.has(coordKey(row, col))) activeCols.push(col);
+        }
+        log(`SCAN row=${row} reads cols=[${activeCols.join(",") || "-"}]`);
+      }
+      log("SCAN end");
+    }
+
+    function maxSensorBindings() {
+      return Math.max(0, ...(state.config?.layers || []).map((layer) => layer.sensorBindings?.length || 0));
+    }
+
+    function sensorSlots() {
+      const sensors = state.config?.sensorInfo?.sensors || [];
+      if (sensors.length) return sensors;
+      return Array.from({ length: maxSensorBindings() }, (_, index) => ({
+        name: `virtual_sensor_${index}`,
+        displayName: `virtual sensor ${index}`,
+        compatible: "keymap-only",
+        status: "virtual",
+        index
+      }));
+    }
+
+    function resolveSensorBinding(sensorIndex) {
+      const active = activeLayerIndexes().sort((a, b) => b - a);
+      for (const layerIndex of active) {
+        const layer = state.config?.layers[layerIndex];
+        const binding = layer?.sensorBindings?.[sensorIndex];
+        if (!binding) continue;
+        if (binding.behavior === "&trans") continue;
+        return { layerIndex, binding };
+      }
+      return { layerIndex: 0, binding: state.config?.layers[0]?.sensorBindings?.[sensorIndex] || null };
+    }
+
+    function bindingForSensorDirection(sensorBinding, direction) {
+      if (!sensorBinding) return null;
+      if (sensorBinding.behavior === "&inc_dec_kp") {
+        return { behavior: "&kp", args: [direction === "cw" ? sensorBinding.args[0] : sensorBinding.args[1]].filter(Boolean) };
+      }
+      const def = state.config?.behaviorDefs?.get(sensorBinding.behavior.replace(/^&/, ""));
+      if (def) {
+        const fixed = direction === "cw" ? def.cwBinding : def.ccwBinding;
+        if (fixed) return fixed;
+      }
+      if (sensorBinding.args.length >= 2) {
+        return { behavior: "&kp", args: [direction === "cw" ? sensorBinding.args[0] : sensorBinding.args[1]].filter(Boolean) };
+      }
+      return null;
+    }
+
+    function triggerSensor(sensorIndex, direction) {
+      const sensor = sensorSlots()[sensorIndex];
+      const resolved = resolveSensorBinding(sensorIndex);
+      const binding = bindingForSensorDirection(resolved.binding, direction);
+      const dirLabel = direction === "cw" ? "CW" : "CCW";
+      log(`SENSOR ${sensor?.name || sensorIndex} rotate ${dirLabel}`);
+      if (!resolved.binding) {
+        log(`SENSOR ${sensorIndex}: no sensor-binding on active layers`);
+        return;
+      }
+      log(`SENSOR binding layer=${resolved.layerIndex} ${bindingLabel(resolved.binding)} -> ${binding ? bindingLabel(binding) : "unresolved"}`);
+      if (!binding) {
+        log(`SENSOR behavior ${resolved.binding.behavior} is logged only`);
+        return;
+      }
+      applyBindingDown(`sensor:${sensorIndex}`, resolved.layerIndex, binding);
+      applyBindingUp(`sensor:${sensorIndex}`, resolved.layerIndex, binding);
+      renderAll();
+    }
+
+    function processorLabel(ref) {
+      if (!ref) return "-";
+      return `${ref.name}${ref.args?.length ? ` ${ref.args.join(" ")}` : ""}`;
+    }
+
+    function processorSelectionForListener(listener) {
+      if (!listener) return { override: null, processors: [], source: "none" };
+      const active = new Set(activeLayerIndexes());
+      const override = (listener.overrides || [])
+        .find((item) => item.layers.some((layer) => active.has(layer)));
+      return {
+        override,
+        processors: override?.processors?.length ? override.processors : listener.processors || [],
+        source: override ? `L${override.layers.join(",")} override` : "default"
+      };
+    }
+
+    function activeProcessorsForListener(listener) {
+      return processorSelectionForListener(listener).processors || [];
+    }
+
+    function processorItemKey(listener, index) {
+      return `${listener?.name || "listener"}:${listener?.device || "-"}:${index}`;
+    }
+
+    function toggleSetItem(set, key) {
+      if (set.has(key)) set.delete(key);
+      else set.add(key);
+    }
+
+    function processorSummary(refs) {
+      return refs?.length ? refs.map(processorLabel).join(" > ") : "no processors";
+    }
+
+    function tracedProcessorSet() {
+      return new Set((state.lastProcessorTrace?.steps || []).map((step) => step.processor));
+    }
+
+    function processorChipValues(ref, def) {
+      const chips = [];
+      if (ref.args?.length) chips.push({ text: `args ${ref.args.join(" ")}`, strong: true });
+      if (def?.builtin) chips.push({ text: "builtin" });
+      else chips.push({ text: "custom" });
+      if (Number.isFinite(def?.cells)) chips.push({ text: `cells ${def.cells}` });
+      if (def?.compatible?.includes("scaler")) {
+        chips.push({ text: `scale ${def.scaleMultiplier || 1}/${def.scaleDivisor || 1}` });
+      }
+      if (def?.xyToScroll) chips.push({ text: "xy->scroll", strong: true });
+      if (def?.trackRemainders) chips.push({ text: "remainders" });
+      return chips;
+    }
+
+    function appendProcessorChips(parent, chips) {
+      if (!chips.length) return;
+      const wrap = document.createElement("div");
+      wrap.className = "processor-node-chips";
+      chips.forEach((chip) => {
+        const node = document.createElement("span");
+        node.className = `processor-chip ${chip.strong ? "strong" : ""}`;
+        node.textContent = chip.text;
+        wrap.appendChild(node);
+      });
+      parent.appendChild(wrap);
+    }
+
+    function collapseButton(collapsed, label, onClick) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "item-collapse";
+      button.textContent = collapsed ? "+" : "-";
+      button.title = collapsed ? `${label}を開く` : `${label}を折りたたむ`;
+      button.setAttribute("aria-expanded", String(!collapsed));
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        onClick();
+      });
+      return button;
+    }
+
+    function processorNodeElement(ref, key = "") {
+      const def = state.config?.sensorInfo?.processorDefs?.get(ref.name);
+      const collapsed = key ? state.collapsedProcessorNodes.has(key) : false;
+      const label = processorLabel(ref);
+      const traced = tracedProcessorSet().has(label);
+      const selected = state.selectedProcessorTrace === label;
+      const node = document.createElement("div");
+      node.className = `graph-node processor-node collapsible ${collapsed ? "collapsed" : ""} ${traced ? "trace-hit" : ""} ${selected ? "trace-selected" : ""}`;
+      node.dataset.processorLabel = label;
+
+      const detail = document.createElement("div");
+      detail.className = "processor-node-detail";
+      const name = document.createElement("div");
+      name.className = "processor-node-name";
+      name.textContent = label;
+
+      const kind = document.createElement("div");
+      kind.className = "processor-node-kind";
+      kind.textContent = def?.label && def.label !== ref.name
+        ? `${def.label} / ${def.compatible || "unknown"}`
+        : def?.compatible || "builtin/unknown";
+
+      node.title = `${label} / ${kind.textContent}`;
+      detail.append(name, kind);
+      appendProcessorChips(detail, processorChipValues(ref, def));
+      node.append(detail);
+      node.addEventListener("click", () => {
+        state.selectedProcessorTrace = state.selectedProcessorTrace === label ? "" : label;
+        renderSensors();
+        renderProcessorTrace();
+      });
+      if (key) {
+        node.appendChild(collapseButton(collapsed, label, () => {
+          toggleSetItem(state.collapsedProcessorNodes, key);
+          renderSensors();
+        }));
+      }
+      return node;
+    }
+
+    function graphEndpointElement(title, detail, className = "", key = "") {
+      const collapsed = key ? state.collapsedProcessorNodes.has(key) : false;
+      const node = document.createElement("div");
+      node.className = `graph-node endpoint collapsible ${className} ${collapsed ? "collapsed" : ""}`;
+
+      const detailBox = document.createElement("div");
+      detailBox.className = "processor-node-detail";
+      const name = document.createElement("div");
+      name.className = "processor-node-name";
+      name.textContent = title;
+
+      const kind = document.createElement("div");
+      kind.className = "processor-node-kind";
+      kind.textContent = detail;
+
+      detailBox.append(name, kind);
+      node.append(detailBox);
+      if (key) {
+        node.appendChild(collapseButton(collapsed, title, () => {
+          toggleSetItem(state.collapsedProcessorNodes, key);
+          renderSensors();
+        }));
+      }
+      return node;
+    }
+
+    function appendGraphArrow(parent) {
+      const arrow = document.createElement("span");
+      arrow.className = "processor-arrow";
+      arrow.setAttribute("aria-hidden", "true");
+      parent.appendChild(arrow);
+    }
+
+    function appendProcessorChainLine(parent, label, refs, active, detail = "", baseKey = label) {
+      const line = document.createElement("div");
+      line.className = `processor-chain-line ${active ? "active" : ""}`;
+
+      const labelRow = document.createElement("div");
+      labelRow.className = "processor-chain-label";
+
+      const labelText = document.createElement("span");
+      labelText.textContent = detail ? `${label} / ${detail}` : label;
+
+      const badge = document.createElement("span");
+      badge.className = "processor-chain-badge";
+      badge.textContent = active ? "ACTIVE" : "inactive";
+      labelRow.append(labelText, badge);
+
+      const nodes = document.createElement("div");
+      nodes.className = "processor-chain-nodes";
+      nodes.appendChild(graphEndpointElement("input event", "REL_X / REL_Y / wheel", "", `${baseKey}:input`));
+      appendGraphArrow(nodes);
+      if (!refs.length) {
+        nodes.appendChild(graphEndpointElement("no processor", "pass through", "", `${baseKey}:pass`));
+      } else {
+        refs.forEach((ref, index) => {
+          if (index > 0) {
+            appendGraphArrow(nodes);
+          }
+          nodes.appendChild(processorNodeElement(ref, `${baseKey}:processor:${index}:${processorLabel(ref)}`));
+        });
+      }
+      appendGraphArrow(nodes);
+      nodes.appendChild(graphEndpointElement("HID output", "mouse / scroll / key", "output", `${baseKey}:output`));
+
+      line.append(labelRow, nodes);
+      parent.appendChild(line);
+    }
+
+    function processorLiveZoneElement(device, listener, pipelineText) {
+      const zone = document.createElement("div");
+      zone.className = `capture-zone processor-live-zone ${state.livePointer ? "active" : ""}`;
+      zone.tabIndex = 0;
+      zone.dataset.liveDevice = device?.name || "";
+      zone.dataset.liveListener = listener?.name || "";
+      zone.setAttribute("aria-label", `${listener?.name || "input processor"} live input zone`);
+
+      const status = document.createElement("div");
+      status.className = "capture-status";
+      const pointerState = document.createElement("span");
+      pointerState.className = `pin processor-pointer-state ${state.livePointer ? "on" : ""}`;
+      pointerState.textContent = `Pointer ${state.livePointer ? "ON" : "OFF"}`;
+      const devicePin = document.createElement("span");
+      devicePin.className = "pin";
+      devicePin.textContent = device?.name || listener?.device || "virtual_pointer";
+      status.append(pointerState, devicePin);
+
+      const readout = document.createElement("div");
+      readout.className = "processor-live-readout";
+      readout.textContent = `focus here: ${pipelineText || "no processors"}`;
+
+      zone.append(status, readout);
+      zone.addEventListener("focus", () => {
+        state.livePointerDeviceName = zone.dataset.liveDevice || "";
+      });
+      zone.addEventListener("wheel", handleLiveWheel, { passive: false });
+      zone.addEventListener("pointermove", handleLivePointerMove);
+      zone.addEventListener("pointerdown", (event) => {
+        zone.focus();
+        handleLivePointerButton(event, true);
+      });
+      zone.addEventListener("pointerup", (event) => handleLivePointerButton(event, false));
+      zone.addEventListener("contextmenu", (event) => {
+        if (state.livePointer) event.preventDefault();
+      });
+      return zone;
+    }
+
+    function eventSummary(event) {
+      return `move(${event.x},${event.y}) scroll(${event.scrollX},${event.scrollY})`;
+    }
+
+    function eventSnapshot(event) {
+      return {
+        x: event.x || 0,
+        y: event.y || 0,
+        scrollX: event.scrollX || 0,
+        scrollY: event.scrollY || 0
+      };
+    }
+
+    function scaledValue(value, multiplier, divisor) {
+      if (!value) return 0;
+      const div = divisor || 1;
+      return Math.trunc((value * (multiplier || 1)) / div);
+    }
+
+    function applyInputProcessor(event, ref) {
+      const def = state.config?.sensorInfo?.processorDefs?.get(ref.name);
+      const before = eventSummary(event);
+      const beforeValues = eventSnapshot(event);
+      const next = { ...event };
+      const n0 = Number(ref.args?.[0]);
+      const n1 = Number(ref.args?.[1]);
+      const mult = Number.isFinite(n0) ? n0 : def?.scaleMultiplier || 1;
+      const div = Number.isFinite(n1) ? n1 : def?.scaleDivisor || 1;
+
+      if (ref.name === "zip_xy_scaler") {
+        next.x = scaledValue(next.x, mult, div);
+        next.y = scaledValue(next.y, mult, div);
+      } else if (ref.name === "zip_x_scaler") {
+        next.x = scaledValue(next.x, mult, div);
+      } else if (ref.name === "zip_y_scaler") {
+        next.y = scaledValue(next.y, mult, div);
+      } else if (ref.name === "zip_scroll_scaler") {
+        next.scrollX = scaledValue(next.scrollX, mult, div);
+        next.scrollY = scaledValue(next.scrollY, mult, div);
+      } else if (ref.name === "zip_xy_to_scroll_mapper") {
+        next.scrollX += next.x;
+        next.scrollY += next.y;
+        next.x = 0;
+        next.y = 0;
+      } else if (ref.name === "zip_xy_swap_mapper") {
+        const oldX = next.x;
+        next.x = next.y;
+        next.y = oldX;
+      } else if (ref.name === "zip_temp_layer" || def?.compatible === "zmk,input-processor-temp-layer") {
+        const layer = layerIndexFromToken(ref.args?.[0], state.config?.layerAliases);
+        if (Number.isFinite(layer)) {
+          state.activeMomentary.set(`input:${ref.name}`, layer);
+          next.notes.push(`temp layer ${layer}`);
+          renderLayerDependentViews();
+        }
+      } else if (def?.compatible === "zmk,input-processor-runtime") {
+        next.x = scaledValue(next.x, def.scaleMultiplier || 1, def.scaleDivisor || 1);
+        next.y = scaledValue(next.y, def.scaleMultiplier || 1, def.scaleDivisor || 1);
+        if (def.xyToScroll) {
+          next.scrollX += next.x;
+          next.scrollY += next.y;
+          next.x = 0;
+          next.y = 0;
+        }
+      } else if (def?.compatible === "zmk,input-processor-scaler") {
+        next.x = scaledValue(next.x, mult, div);
+        next.y = scaledValue(next.y, mult, div);
+        next.scrollX = scaledValue(next.scrollX, mult, div);
+        next.scrollY = scaledValue(next.scrollY, mult, div);
+      } else if (def?.compatible === "zmk,input-processor-code-mapper") {
+        next.notes.push("custom code mapper logged only");
+      } else if (def?.compatible?.includes("keybind") || def?.compatible?.includes("behaviors")) {
+        next.notes.push(`${def.compatible} logged only`);
+      } else {
+        next.notes.push(`${ref.name} logged only`);
+      }
+
+      const afterValues = eventSnapshot(next);
+      next.trace.push({
+        processor: processorLabel(ref),
+        compatible: def?.compatible || "builtin/unknown",
+        before,
+        after: eventSummary(next),
+        beforeValues,
+        afterValues,
+        notes: [...next.notes]
+      });
+      return next;
+    }
+
+    function processInputEvent(listener, event) {
+      const processors = activeProcessorsForListener(listener);
+      let current = {
+        x: event.x || 0,
+        y: event.y || 0,
+        scrollX: event.scrollX || 0,
+        scrollY: event.scrollY || 0,
+        trace: [],
+        notes: []
+      };
+      const rawValues = eventSnapshot(current);
+      processors.forEach((ref) => {
+        current = applyInputProcessor(current, ref);
+      });
+      return { ...current, processors, rawValues, outputValues: eventSnapshot(current) };
+    }
+
+    function triggerPointer(device, dx, dy, mode = "move", listenerOverride = null) {
+      const listener = listenerOverride
+        || (state.config?.sensorInfo?.listeners || []).find((item) => item.device === device.name);
+      const traceDeviceName = listener?.device || device?.name || "virtual_pointer";
+      const inputEvent = mode === "scroll"
+        ? { scrollX: dx, scrollY: dy }
+        : { x: dx, y: dy };
+      const processed = processInputEvent(listener, inputEvent);
+      const processors = processed.processors.length ? processed.processors.map(processorLabel).join(" -> ") : "-";
+      if (mode === "scroll") {
+        log(`INPUT ${traceDeviceName} scroll dx=${dx} dy=${dy} listener=${listener?.name || "-"} processors=${processors}`);
+      } else {
+        log(`INPUT ${traceDeviceName} move dx=${dx} dy=${dy} listener=${listener?.name || "-"} processors=${processors}`);
+      }
+      state.selectedProcessorTrace = "";
+      state.lastProcessorTrace = {
+        device: traceDeviceName,
+        listener: listener?.name || "-",
+        mode,
+        processors,
+        rawValues: processed.rawValues,
+        outputValues: processed.outputValues,
+        steps: processed.trace
+      };
+      processed.trace.forEach((step) => log(`PROCESS ${step.processor}: ${step.before} -> ${step.after}`));
+      processed.notes.forEach((line) => log(`PROCESS note: ${line}`));
+      if (processed.x || processed.y) log(`HID mouse move X=${processed.x} Y=${processed.y}`);
+      if (processed.scrollX || processed.scrollY) log(`HID mouse scroll X=${processed.scrollX} Y=${processed.scrollY}`);
+      if (!processed.x && !processed.y && !processed.scrollX && !processed.scrollY) log("HID input suppressed or zero after processors");
+      renderSensors();
+      renderProcessorTrace();
+    }
+
+    function isTextEditingTarget(target) {
+      const tag = target?.tagName?.toLowerCase();
+      return tag === "textarea" || tag === "input" || tag === "select" || target?.isContentEditable;
+    }
+
+    function zmkKeyFromKeyboardEvent(event) {
+      const code = event.code || "";
+      const special = {
+        Space: "SPACE",
+        Enter: "ENTER",
+        Escape: "ESC",
+        Backspace: "BACKSPACE",
+        Tab: "TAB",
+        ArrowUp: "UP",
+        ArrowDown: "DOWN",
+        ArrowLeft: "LEFT",
+        ArrowRight: "RIGHT",
+        Minus: "MINUS",
+        Equal: "EQUAL",
+        BracketLeft: "LBKT",
+        BracketRight: "RBKT",
+        Backslash: "BSLH",
+        Semicolon: "SEMI",
+        Quote: "SQT",
+        Comma: "COMMA",
+        Period: "DOT",
+        Slash: "FSLH",
+        Backquote: "GRAVE",
+        Delete: "DEL",
+        Home: "HOME",
+        End: "END",
+        PageUp: "PG_UP",
+        PageDown: "PG_DN",
+        CapsLock: "CAPS",
+        ShiftLeft: "LSHFT",
+        ShiftRight: "RSHFT",
+        ControlLeft: "LCTRL",
+        ControlRight: "RCTRL",
+        AltLeft: "LALT",
+        AltRight: "RALT",
+        MetaLeft: "LGUI",
+        MetaRight: "RGUI"
+      };
+      if (special[code]) return special[code];
+      const keyMatch = code.match(/^Key([A-Z])$/);
+      if (keyMatch) return keyMatch[1];
+      const digitMatch = code.match(/^Digit([0-9])$/);
+      if (digitMatch) return `N${digitMatch[1]}`;
+      const fnMatch = code.match(/^F([0-9]{1,2})$/);
+      if (fnMatch) return `F${fnMatch[1]}`;
+      return "";
+    }
+
+    function bindingMatchesHostKey(binding, zmkKey) {
+      if (!binding || !zmkKey) return false;
+      if (binding.behavior === "&kp" && binding.args[0] === zmkKey) return true;
+      if (binding.behavior === "&lt" && binding.args[1] === zmkKey) return true;
+      if (binding.behavior === "&mt" && binding.args[1] === zmkKey) return true;
+      if (binding.behavior === "&mkp" && `MOUSE_${binding.args[0]}` === zmkKey) return true;
+      return false;
+    }
+
+    function findVirtualPositionForHostKey(zmkKey) {
+      const config = state.config;
+      if (!config) return null;
+      for (let pos = 0; pos < config.transform.pairs.length; pos += 1) {
+        const pair = config.transform.pairs[pos];
+        const resolved = resolveBinding(pos);
+        if (pair && bindingMatchesHostKey(resolved.binding, zmkKey)) {
+          return { pos, pair, binding: resolved.binding, layerIndex: resolved.layerIndex };
+        }
+      }
+      return null;
+    }
+
+    function handleLiveKeyDown(event) {
+      if (!state.liveKeyboard || isTextEditingTarget(event.target) || event.repeat) return;
+      const zmkKey = zmkKeyFromKeyboardEvent(event);
+      if (!zmkKey || state.livePressedByCode.has(event.code)) return;
+      const match = findVirtualPositionForHostKey(zmkKey);
+      if (!match) {
+        log(`LIVE key ${event.code} -> ${zmkKey}: no matching active keymap binding`);
+        els.liveInputReadout.textContent = `${zmkKey}: no binding`;
+        return;
+      }
+      event.preventDefault();
+      state.livePressedByCode.set(event.code, match.pair);
+      log(`LIVE keydown ${event.code} -> ${zmkKey} -> pos=${match.pos} RC(${match.pair.row},${match.pair.col})`);
+      pressSwitch(match.pair.row, match.pair.col);
+      els.liveInputReadout.textContent = `${zmkKey} -> pos ${match.pos}`;
+    }
+
+    function handleLiveKeyUp(event) {
+      if (!state.liveKeyboard || isTextEditingTarget(event.target)) return;
+      const pair = state.livePressedByCode.get(event.code);
+      if (!pair) return;
+      event.preventDefault();
+      state.livePressedByCode.delete(event.code);
+      log(`LIVE keyup ${event.code} -> RC(${pair.row},${pair.col})`);
+      releaseSwitch(pair.row, pair.col);
+    }
+
+    function firstInputDevice() {
+      return state.config?.sensorInfo?.inputDevices?.[0] || {
+        name: "virtual_pointer",
+        displayName: "virtual pointer",
+        compatible: "browser,input"
+      };
+    }
+
+    function inputDeviceByName(name) {
+      return (state.config?.sensorInfo?.inputDevices || []).find((device) => device.name === name) || null;
+    }
+
+    function liveZoneFromEvent(event) {
+      return event.target?.closest?.("[data-live-device]") || els.liveInputTarget;
+    }
+
+    function liveDeviceFromEvent(event) {
+      const zone = liveZoneFromEvent(event);
+      const deviceName = zone?.dataset?.liveDevice || state.livePointerDeviceName;
+      return inputDeviceByName(deviceName) || firstInputDevice();
+    }
+
+    function liveListenerFromEvent(event) {
+      const listenerName = liveZoneFromEvent(event)?.dataset?.liveListener || "";
+      return (state.config?.sensorInfo?.listeners || []).find((listener) => listener.name === listenerName) || null;
+    }
+
+    function updateLiveReadout(zone, text) {
+      const target = zone?.querySelector?.(".processor-live-readout") || els.liveInputReadout;
+      if (target) target.textContent = text;
+      if (zone && zone !== els.liveInputTarget) state.livePointerDeviceName = zone.dataset.liveDevice || "";
+    }
+
+    function handleLiveWheel(event) {
+      if (!state.livePointer) return;
+      event.preventDefault();
+      const zone = liveZoneFromEvent(event);
+      const direction = event.deltaY > 0 ? "cw" : "ccw";
+      if (zone === els.liveInputTarget && sensorSlots().length) {
+        triggerSensor(0, direction);
+      } else {
+        triggerPointer(liveDeviceFromEvent(event), Math.round(event.deltaX), Math.round(event.deltaY), "scroll", liveListenerFromEvent(event));
+      }
+      updateLiveReadout(zone, `wheel ${direction.toUpperCase()}`);
+    }
+
+    function handleLivePointerMove(event) {
+      if (!state.livePointer || (event.movementX === 0 && event.movementY === 0)) return;
+      if (event.buttons === 0) return;
+      event.preventDefault();
+      triggerPointer(liveDeviceFromEvent(event), event.movementX, event.movementY, "move", liveListenerFromEvent(event));
+      updateLiveReadout(liveZoneFromEvent(event), `move ${event.movementX}, ${event.movementY}`);
+    }
+
+    function handleLivePointerButton(event, pressed) {
+      if (!state.livePointer) return;
+      event.preventDefault();
+      const buttonName = event.button === 0 ? "MB1" : event.button === 1 ? "MB3" : event.button === 2 ? "MB2" : `MB${event.button + 1}`;
+      log(`LIVE pointer ${pressed ? "down" : "up"} ${buttonName}`);
+      if (pressed) {
+        state.activeKeys.add(`MOUSE_${buttonName}`);
+      } else {
+        state.activeKeys.delete(`MOUSE_${buttonName}`);
+      }
+      renderKeys();
+      updateLiveReadout(liveZoneFromEvent(event), `${buttonName} ${pressed ? "down" : "up"}`);
+    }
+
+    function normalizeTraceValues(values = {}) {
+      return {
+        x: Number(values.x || values.dx || 0),
+        y: Number(values.y || values.dy || 0),
+        scrollX: Number(values.scrollX ?? values.scroll_x ?? values.sx ?? 0),
+        scrollY: Number(values.scrollY ?? values.scroll_y ?? values.sy ?? 0)
+      };
+    }
+
+    function traceStepFromJson(step) {
+      return {
+        processor: step.processor || step.stage || "trace",
+        compatible: step.compatible || "zmk-trace",
+        before: eventSummary(normalizeTraceValues(step.before)),
+        after: eventSummary(normalizeTraceValues(step.after)),
+        beforeValues: normalizeTraceValues(step.before),
+        afterValues: normalizeTraceValues(step.after),
+        notes: step.notes || []
+      };
+    }
+
+    function handleTraceJson(message) {
+      if (!message || typeof message !== "object") return;
+      if (message.type === "input_trace") {
+        const raw = normalizeTraceValues(message.raw || message.before || message);
+        const output = normalizeTraceValues(message.output || message.after || message);
+        state.lastProcessorTrace = {
+          device: message.device || "-",
+          listener: message.listener || "-",
+          mode: message.mode || "real",
+          processors: message.processors || "-",
+          rawValues: raw,
+          outputValues: output,
+          steps: (message.steps || []).map(traceStepFromJson)
+        };
+        log(`TRACE input ${state.lastProcessorTrace.device} listener=${state.lastProcessorTrace.listener} ${eventSummary(raw)} -> ${eventSummary(output)}`);
+        state.selectedProcessorTrace = "";
+        renderSensors();
+        renderProcessorTrace();
+      } else if (message.type === "input_stage") {
+        const stageName = message.stage || message.processor || "stage";
+        const values = normalizeTraceValues(message.after || message.before || message);
+        const shouldStart = !state.lastProcessorTrace || /raw|start|before/i.test(stageName);
+        if (shouldStart) {
+          state.lastProcessorTrace = {
+            device: message.device || message.data?.device || `input${message.data?.input_device_index ?? ""}` || "-",
+            listener: message.listener || "-",
+            mode: message.mode || "real",
+            processors: stageName,
+            rawValues: values,
+            outputValues: values,
+            steps: []
+          };
+        } else {
+          const beforeValues = state.lastProcessorTrace.outputValues;
+          const step = {
+            processor: stageName,
+            compatible: message.compatible || "zmk-trace-stage",
+            before: eventSummary(beforeValues),
+            after: eventSummary(values),
+            beforeValues,
+            afterValues: values,
+            notes: message.notes || []
+          };
+          state.lastProcessorTrace.steps.push(step);
+          state.lastProcessorTrace.outputValues = values;
+          state.lastProcessorTrace.processors = [
+            state.lastProcessorTrace.processors,
+            stageName
+          ].filter(Boolean).join(" -> ");
+        }
+        log(`TRACE stage ${stageName} ${eventSummary(values)}`);
+        renderSensors();
+        renderProcessorTrace();
+      } else if (message.type === "event") {
+        log(`TRACE event ${message.name || "event"} ${JSON.stringify(message.data || {})}`);
+      } else {
+        log(`TRACE ${JSON.stringify(message)}`);
+      }
+    }
+
+    function renderTraceDeviceState() {
+      els.connectTraceDevice.disabled = state.traceConnected;
+      els.disconnectTraceDevice.disabled = !state.traceConnected;
+      els.traceDeviceNotice.className = `notice ${state.traceConnected ? "ok" : ""}`;
+      els.traceDeviceNotice.textContent = state.traceConnected
+        ? "Trace deviceに接続中です。実機からのJSON Linesをprocessor traceへ反映します。"
+        : "ZMK trace moduleがJSON LinesをUSB CDC serialへ出す場合、ここから実機traceを受信できます。localhostまたはHTTPSで開く必要があります。";
+      els.traceDeviceStatus.innerHTML = `<span class="pin ${state.traceConnected ? "on" : ""}">Serial ${state.traceConnected ? "ON" : "OFF"}</span>`;
+    }
+
+    async function readTraceSerialLoop() {
+      const decoder = new TextDecoder();
+      let buffer = "";
+      try {
+        while (state.tracePort?.readable && state.traceConnected) {
+          state.traceReader = state.tracePort.readable.getReader();
+          try {
+            while (true) {
+              const { value, done } = await state.traceReader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split(/\r?\n/);
+              buffer = lines.pop() || "";
+              lines.map((line) => line.trim()).filter(Boolean).forEach((line) => {
+                try {
+                  handleTraceJson(JSON.parse(line));
+                } catch (error) {
+                  log(`TRACE parse error: ${line}`);
+                }
+              });
+            }
+          } finally {
+            state.traceReader.releaseLock();
+          }
+        }
+      } catch (error) {
+        log(`TRACE serial error: ${error.message}`);
+      } finally {
+        state.traceConnected = false;
+        renderTraceDeviceState();
+      }
+    }
+
+    async function connectTraceDevice() {
+      if (!("serial" in navigator)) {
+        log("TRACE Web Serial is not available in this browser/context");
+        els.traceDeviceNotice.className = "notice";
+        els.traceDeviceNotice.textContent = "Web Serialが使えません。Chromium系ブラウザでlocalhostまたはHTTPSから開いてください。";
+        return;
+      }
+      try {
+        state.tracePort = await navigator.serial.requestPort();
+        await state.tracePort.open({ baudRate: 115200 });
+        state.traceConnected = true;
+        renderTraceDeviceState();
+        log("TRACE serial connected");
+        readTraceSerialLoop();
+      } catch (error) {
+        log(`TRACE serial connect failed: ${error.message}`);
+        state.traceConnected = false;
+        renderTraceDeviceState();
+      }
+    }
+
+    async function disconnectTraceDevice() {
+      state.traceConnected = false;
+      try {
+        await state.traceReader?.cancel();
+      } catch (error) {
+        log(`TRACE reader cancel failed: ${error.message}`);
+      }
+      try {
+        await state.tracePort?.close();
+      } catch (error) {
+        log(`TRACE serial close failed: ${error.message}`);
+      }
+      state.tracePort = null;
+      renderTraceDeviceState();
+      log("TRACE serial disconnected");
+    }
+
+    function resetRuntime(clearLog = true) {
+      state.pressed.clear();
+      state.lastPressed.clear();
+      state.activeMomentary.clear();
+      state.toggledLayers.clear();
+      state.activeKeys.clear();
+      state.pressBindings.clear();
+      state.defaultLayer = 0;
+      state.livePressedByCode.clear();
+      state.lastProcessorTrace = null;
+      if (clearLog) state.logLines = [];
+    }
+
+    function renderAll() {
+      renderSummary();
+      renderMatrix();
+      renderPhysicalLayout();
+      renderSensors();
+      renderProcessorTrace();
+      renderReadout();
+      renderLayers();
+      renderKeys();
+      renderMappingTable();
+    }
+
+    function firmwareSlotLabel(firmware) {
+      if (!firmware) return "-";
+      const side = firmware.side !== "unknown" ? `/${firmware.side}` : "";
+      return `${firmware.target} (${firmware.role}${side})`;
+    }
+
+    function configSlotLabel(config) {
+      if (!config) return "-";
+      const processorCount = config.sensorInfo?.listeners?.reduce((total, listener) => {
+        const defaultCount = listener.processors?.length || 0;
+        const overrideCount = (listener.overrides || []).reduce((sum, item) => sum + (item.processors?.length || 0), 0);
+        return total + defaultCount + overrideCount;
+      }, 0) || 0;
+      return `${config.layers.length}L / ${config.physicalLayout?.keys.length || 0}K / ${processorCount}P`;
+    }
+
+    function splitPairSummary() {
+      const left = state.firmwareSlots.left;
+      const right = state.firmwareSlots.right;
+      if (!left && !right) return "-";
+      if (!left || !right) return "select both left and right firmware";
+
+      const firmwares = [
+        { slot: "left", firmware: left },
+        { slot: "right", firmware: right }
+      ];
+      const mismatches = firmwares.filter((entry) => (
+        entry.firmware.side !== "unknown" && entry.firmware.side !== entry.slot
+      ));
+      if (mismatches.length) {
+        return `slot mismatch: ${mismatches.map((entry) => `${entry.slot}=${entry.firmware.side}`).join(", ")}`;
+      }
+      const central = firmwares.find((entry) => entry.firmware.role === "central");
+      const peripherals = firmwares.filter((entry) => entry.firmware.role === "peripheral");
+
+      if (central && peripherals.length) {
+        return `${peripherals.map((entry) => entry.slot).join("+")} -> ${central.slot} central`;
+      }
+      if (firmwares.every((entry) => entry.firmware.role === "standalone")) return "standalone pair";
+      if (!central) return "no central firmware selected";
+      return "central selected, no peripheral selected";
+    }
+
+    function renderSummary() {
+      const config = state.config;
+      if (!config) return;
+      els.kscanType.textContent = config.compatible.replace("zmk,", "");
+      els.rowCount.textContent = String(config.rowCount);
+      els.colCount.textContent = String(config.colCount);
+      els.layerCount.textContent = String(config.layers.length);
+      els.physicalLayoutName.textContent = config.physicalLayout?.displayName || "-";
+      els.physicalKeyCount.textContent = String(config.physicalLayout?.keys.length || 0);
+      els.sensorCount.textContent = String(config.sensorInfo?.sensors.length || 0);
+      els.inputDeviceCount.textContent = String(config.sensorInfo?.inputDevices.length || 0);
+      els.firmwareTarget.textContent = state.activeFirmware?.target || "-";
+      els.firmwareRole.textContent = state.activeFirmware
+        ? `${state.activeFirmware.role}${state.activeFirmware.side !== "unknown" ? ` / ${state.activeFirmware.side}` : ""}`
+        : "-";
+      if (els.leftFirmwareSlot) els.leftFirmwareSlot.textContent = firmwareSlotLabel(state.firmwareSlots.left);
+      if (els.rightFirmwareSlot) els.rightFirmwareSlot.textContent = firmwareSlotLabel(state.firmwareSlots.right);
+      if (els.splitPairStatus) els.splitPairStatus.textContent = splitPairSummary();
+      if (els.leftConfigSlot) els.leftConfigSlot.textContent = configSlotLabel(state.firmwareSlotConfigs.left);
+      if (els.rightConfigSlot) els.rightConfigSlot.textContent = configSlotLabel(state.firmwareSlotConfigs.right);
+      if (config.warnings.length) {
+        els.parseNotice.className = "notice";
+        els.parseNotice.textContent = config.warnings.join(" ");
+      } else {
+        els.parseNotice.className = "notice ok";
+        els.parseNotice.textContent = "解析できました。クリックで仮想スイッチを閉じると、kscan position、layer解決、HID風イベントをログに出します。";
+      }
+    }
+
+    function renderMatrix() {
+      const config = state.config;
+      if (!config) return;
+      els.matrix.style.gridTemplateColumns = `repeat(${config.colCount}, 74px)`;
+      els.matrix.innerHTML = "";
+      for (let row = 0; row < config.rowCount; row += 1) {
+        for (let col = 0; col < config.colCount; col += 1) {
+          const key = coordKey(row, col);
+          const pos = positionForCoord(row, col);
+          const resolved = pos >= 0 ? resolveBinding(pos) : { binding: null };
+          const btn = document.createElement("button");
+          btn.className = `cell ${state.pressed.has(key) ? "pressed" : ""} ${pos < 0 ? "unmapped" : ""}`;
+          btn.type = "button";
+          btn.innerHTML = `
+            <span class="binding">${bindingLabel(resolved.binding)}</span>
+            <span class="coord">RC(${row},${col})</span>
+            <span class="pos">${pos >= 0 ? `pos ${pos}` : "unmapped"}</span>
+          `;
+          if (state.mode === "toggle") {
+            btn.addEventListener("click", () => toggleSwitch(row, col));
+          } else {
+            btn.addEventListener("pointerdown", (event) => {
+              event.preventDefault();
+              btn.setPointerCapture(event.pointerId);
+              pressSwitch(row, col);
+            });
+            btn.addEventListener("pointerup", (event) => {
+              event.preventDefault();
+              releaseSwitch(row, col);
+            });
+            btn.addEventListener("pointercancel", () => releaseSwitch(row, col));
+            btn.addEventListener("lostpointercapture", () => releaseSwitch(row, col));
+          }
+          els.matrix.appendChild(btn);
+        }
+      }
+    }
+
+    function renderPhysicalLayout() {
+      const config = state.config;
+      const layout = config?.physicalLayout;
+      els.physicalLayout.innerHTML = "";
+      if (!config || !layout || !layout.keys.length) {
+        els.physicalNotice.className = "notice";
+        els.physicalNotice.textContent = "physical layout の `keys` が見つかりません。";
+        els.physicalLayout.style.width = "100%";
+        els.physicalLayout.style.height = "220px";
+        return;
+      }
+
+      const scale = 0.45;
+      const modules = layout.modules || [];
+      const keyBounds = layout.keys.map((key) => ({ x: key.x + key.w, y: key.y + key.h }));
+      const moduleBounds = modules.map((module) => ({ x: module.x + module.w, y: module.y + module.h }));
+      const bounds = keyBounds.concat(moduleBounds);
+      const maxX = Math.max(...bounds.map((item) => item.x), 300);
+      const maxY = Math.max(...bounds.map((item) => item.y), 220);
+      els.physicalLayout.style.width = `${Math.ceil(maxX * scale + 16)}px`;
+      els.physicalLayout.style.height = `${Math.ceil(maxY * scale + 16)}px`;
+      els.physicalNotice.className = "notice ok";
+      els.physicalNotice.textContent = `${layout.displayName}: ${layout.keys.length} keys, ${modules.length} module(s), transform=${layout.transform || "-"}, kscan=${layout.kscan || "-"}`;
+
+      modules.forEach((module) => {
+        const node = document.createElement("div");
+        node.className = `physical-module ${module.type || ""}`;
+        node.style.left = `${module.x * scale}px`;
+        node.style.top = `${module.y * scale}px`;
+        node.style.width = `${Math.max(22, module.w * scale)}px`;
+        node.style.height = `${Math.max(22, module.h * scale)}px`;
+        node.title = `${module.displayName} / ${module.type || module.compatible} / linked=${module.linkedDevices.join(",") || "-"}`;
+        node.innerHTML = `
+          <span class="module-title">${module.displayName}</span>
+          <span class="module-type">${module.type || module.compatible}</span>
+        `;
+        els.physicalLayout.appendChild(node);
+      });
+
+      layout.keys.forEach((physicalKey, pos) => {
+        const pair = config.transform.pairs[pos];
+        const resolved = resolveBinding(pos);
+        const key = pair ? coordKey(pair.row, pair.col) : "";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `physical-key ${key && state.pressed.has(key) ? "pressed" : ""}`;
+        button.style.left = `${physicalKey.x * scale}px`;
+        button.style.top = `${physicalKey.y * scale}px`;
+        button.style.width = `${Math.max(18, physicalKey.w * scale)}px`;
+        button.style.height = `${Math.max(18, physicalKey.h * scale)}px`;
+        button.style.transformOrigin = `${(physicalKey.rx - physicalKey.x) * scale}px ${(physicalKey.ry - physicalKey.y) * scale}px`;
+        button.style.transform = `rotate(${physicalKey.r / 100}deg)`;
+        button.innerHTML = `
+          <span class="binding">${bindingLabel(resolved.binding)}</span>
+          <span class="pos">${pair ? `pos ${pos} RC(${pair.row},${pair.col})` : `pos ${pos}`}</span>
+        `;
+        button.title = pair
+          ? `pos ${pos} / RC(${pair.row},${pair.col}) / ${bindingLabel(resolved.binding)}`
+          : `pos ${pos} / transformなし / ${bindingLabel(resolved.binding)}`;
+
+        if (pair) {
+          if (state.mode === "toggle") {
+            button.addEventListener("click", () => toggleSwitch(pair.row, pair.col));
+          } else {
+            button.addEventListener("pointerdown", (event) => {
+              event.preventDefault();
+              button.setPointerCapture(event.pointerId);
+              pressSwitch(pair.row, pair.col);
+            });
+            button.addEventListener("pointerup", (event) => {
+              event.preventDefault();
+              releaseSwitch(pair.row, pair.col);
+            });
+            button.addEventListener("pointercancel", () => releaseSwitch(pair.row, pair.col));
+            button.addEventListener("lostpointercapture", () => releaseSwitch(pair.row, pair.col));
+          }
+        } else {
+          button.addEventListener("click", () => log(`PHYSICAL pos=${pos} has no matrix transform entry`));
+        }
+
+        els.physicalLayout.appendChild(button);
+      });
+    }
+
+    function renderSensors() {
+      const config = state.config;
+      if (!config) return;
+      const sensors = sensorSlots();
+      const inputDevices = config.sensorInfo?.inputDevices || [];
+      els.sensorList.innerHTML = "";
+      els.pointerList.innerHTML = "";
+      els.processorList.innerHTML = "";
+      if (els.processorNotice) {
+        els.processorNotice.className = "notice";
+        els.processorNotice.textContent = "Input processor listenerは見つかりません。";
+      }
+
+      if (!sensors.length) {
+        const empty = document.createElement("div");
+        empty.className = "notice";
+        empty.textContent = "keymap sensorは見つかりません。";
+        els.sensorList.appendChild(empty);
+      } else {
+        sensors.forEach((sensor, index) => {
+          const resolved = resolveSensorBinding(index);
+          const cw = bindingForSensorDirection(resolved.binding, "cw");
+          const ccw = bindingForSensorDirection(resolved.binding, "ccw");
+          const row = document.createElement("div");
+          row.className = "sensor-row";
+
+          const info = document.createElement("div");
+          info.innerHTML = `
+            <div class="sensor-title">${sensor.displayName || sensor.name}</div>
+            <div class="sensor-meta">${sensor.compatible || "unknown"} / ${sensor.status || "okay"} / layer ${resolved.layerIndex}: ${bindingLabel(resolved.binding)}</div>
+            <div class="sensor-meta">CW ${bindingLabel(cw)} / CCW ${bindingLabel(ccw)}</div>
+          `;
+
+          const actions = document.createElement("div");
+          actions.className = "split-controls";
+          const ccwButton = document.createElement("button");
+          ccwButton.type = "button";
+          ccwButton.textContent = "CCW";
+          ccwButton.title = "反時計回りのsensor event";
+          ccwButton.addEventListener("click", () => triggerSensor(index, "ccw"));
+          const cwButton = document.createElement("button");
+          cwButton.type = "button";
+          cwButton.textContent = "CW";
+          cwButton.title = "時計回りのsensor event";
+          cwButton.addEventListener("click", () => triggerSensor(index, "cw"));
+          actions.append(ccwButton, cwButton);
+          row.append(info, actions);
+          els.sensorList.appendChild(row);
+        });
+      }
+
+      if (!inputDevices.length) {
+        els.sensorNotice.className = sensors.length ? "notice ok" : "notice";
+        els.sensorNotice.textContent = sensors.length
+          ? `${sensors.length} sensor(s) を検出しました。`
+          : "sensor/input deviceは見つかりません。";
+      }
+
+      els.sensorNotice.className = "notice ok";
+      els.sensorNotice.textContent = `${sensors.length} keymap sensor(s), ${inputDevices.length} input device(s) を検出しました。`;
+      if (els.processorNotice) {
+        const listenerCount = config.sensorInfo?.listeners?.length || 0;
+        els.processorNotice.className = listenerCount ? "notice ok" : "notice";
+        els.processorNotice.textContent = listenerCount
+          ? `${listenerCount} input processor listener(s). Active chain is highlighted.`
+          : "Input processor listenerは見つかりません。";
+      }
+      inputDevices.forEach((device) => {
+        const listener = (config.sensorInfo?.listeners || []).find((item) => item.device === device.name);
+        const row = document.createElement("div");
+        row.className = "sensor-row";
+        const info = document.createElement("div");
+        const activePipeline = activeProcessorsForListener(listener).map(processorLabel).join(" -> ") || "-";
+        info.innerHTML = `
+          <div class="sensor-title">${device.displayName || device.name}</div>
+          <div class="sensor-meta">${device.compatible} / ${device.status || "okay"} / listener=${listener?.name || "-"}</div>
+          <div class="sensor-meta">pipeline=${activePipeline}</div>
+        `;
+
+        const controls = document.createElement("div");
+        controls.className = "pointer-pad";
+        const mkButton = (text, title, dx, dy, mode = "move") => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "icon";
+          button.textContent = text;
+          button.title = title;
+          button.addEventListener("click", () => triggerPointer(device, dx, dy, mode));
+          return button;
+        };
+        const empty = () => {
+          const span = document.createElement("span");
+          span.className = "empty";
+          return span;
+        };
+        controls.append(
+          empty(), mkButton("↑", "move up", 0, -12), empty(),
+          mkButton("←", "move left", -12, 0), mkButton("S", "scroll down", 0, 1, "scroll"), mkButton("→", "move right", 12, 0),
+          empty(), mkButton("↓", "move down", 0, 12), empty()
+        );
+        row.append(info, controls);
+        els.pointerList.appendChild(row);
+      });
+
+      (config.sensorInfo?.listeners || []).forEach((listener, index) => {
+        const itemKey = processorItemKey(listener, index);
+        const collapsed = state.collapsedProcessorItems.has(itemKey);
+        const row = document.createElement("div");
+        row.className = `sensor-row processor-chain-row ${collapsed ? "collapsed" : ""}`;
+        const selection = processorSelectionForListener(listener);
+        const head = document.createElement("div");
+        head.className = "processor-chain-head";
+
+        const info = document.createElement("div");
+        info.className = "processor-chain-head-main";
+        const overrideCount = listener.overrides?.length || 0;
+        const activeCount = selection.processors?.length || 0;
+        info.innerHTML = `
+          <div class="sensor-title">${listener.name} processor chain</div>
+          <div class="sensor-meta">device=${listener.device || "-"} / selected=${selection.source} / active=${activeCount} / overrides=${overrideCount}</div>
+          <div class="sensor-meta">active=${processorSummary(selection.processors)}</div>
+        `;
+
+        const collapseButton = document.createElement("button");
+        collapseButton.type = "button";
+        collapseButton.className = "processor-collapse";
+        collapseButton.textContent = collapsed ? "+" : "-";
+        collapseButton.title = collapsed ? "processor graphを開く" : "processor graphを折りたたむ";
+        collapseButton.setAttribute("aria-expanded", String(!collapsed));
+        collapseButton.addEventListener("click", () => {
+          toggleSetItem(state.collapsedProcessorItems, itemKey);
+          renderSensors();
+        });
+
+        head.append(info, collapseButton);
+
+        const lines = document.createElement("div");
+        lines.className = "processor-chain-lines";
+        appendProcessorChainLine(lines, "default", listener.processors || [], !selection.override, "", `${itemKey}:default`);
+        (listener.overrides || []).forEach((override, overrideIndex) => {
+          appendProcessorChainLine(
+            lines,
+            `override L${override.layers.join(",")}`,
+            override.processors || [],
+            selection.override === override,
+            `active when layer ${override.layers.join(" or ")} is on`,
+            `${itemKey}:override:${overrideIndex}`
+          );
+        });
+        const listenerDevice = inputDeviceByName(listener.device) || {
+          name: listener.device || "virtual_pointer",
+          displayName: listener.device || "virtual pointer",
+          compatible: "browser,input"
+        };
+        lines.appendChild(processorLiveZoneElement(listenerDevice, listener, processorSummary(selection.processors)));
+
+        row.append(head, lines);
+        els.processorList.appendChild(row);
+      });
+    }
+
+    function valuesHtml(values) {
+      return `
+        <span class="pin">x ${values.x}</span>
+        <span class="pin">y ${values.y}</span>
+        <span class="pin">sx ${values.scrollX}</span>
+        <span class="pin">sy ${values.scrollY}</span>
+      `;
+    }
+
+    function traceStepElement(key, title, bodyHtml, className = "", processorName = "") {
+      const collapsed = state.collapsedProcessorTraceItems.has(key);
+      const selected = processorName && state.selectedProcessorTrace === processorName;
+      const node = document.createElement("div");
+      node.className = `trace-step ${className} ${processorName ? "trace-processor trace-hit" : ""} ${selected ? "trace-selected" : ""} ${collapsed ? "collapsed" : ""}`;
+      if (processorName) node.dataset.processorLabel = processorName;
+
+      const head = document.createElement("div");
+      head.className = "trace-step-head";
+      const titleNode = document.createElement("div");
+      titleNode.className = "trace-title";
+      titleNode.textContent = title;
+      if (processorName) {
+        titleNode.title = "Select matching processor node";
+        titleNode.addEventListener("click", () => {
+          state.selectedProcessorTrace = selected ? "" : processorName;
+          renderSensors();
+          renderProcessorTrace();
+        });
+      }
+      head.append(titleNode, collapseButton(collapsed, title, () => {
+        toggleSetItem(state.collapsedProcessorTraceItems, key);
+        renderProcessorTrace();
+      }));
+
+      const body = document.createElement("div");
+      body.className = "trace-step-body";
+      body.innerHTML = bodyHtml;
+
+      node.append(head, body);
+      return node;
+    }
+
+    function renderProcessorTrace() {
+      if (!els.processorTrace) return;
+      els.processorTrace.innerHTML = "";
+      const trace = state.lastProcessorTrace;
+      if (!trace) {
+        const empty = document.createElement("div");
+        empty.className = "notice";
+        empty.textContent = "入力デバイスを操作すると、processorごとのbefore/afterをここに表示します。";
+        els.processorTrace.appendChild(empty);
+        return;
+      }
+
+      els.processorTrace.appendChild(traceStepElement(
+        "raw",
+        `Raw input: ${trace.device} / listener=${trace.listener} / mode=${trace.mode}`,
+        `<div class="trace-values">${valuesHtml(trace.rawValues)}</div>`,
+        "raw"
+      ));
+
+      trace.steps.forEach((step, index) => {
+        els.processorTrace.appendChild(traceStepElement(
+          `step:${index}:${step.processor}`,
+          `${index + 1}. ${step.processor}`,
+          `
+          <div class="sensor-meta">${step.compatible}</div>
+          <div class="trace-values">${valuesHtml(step.beforeValues)}</div>
+          <div class="sensor-meta">↓</div>
+          <div class="trace-values">${valuesHtml(step.afterValues)}</div>
+          `,
+          "",
+          step.processor
+        ));
+      });
+
+      els.processorTrace.appendChild(traceStepElement(
+        "output",
+        "HID output",
+        `<div class="trace-values">${valuesHtml(trace.outputValues)}</div>`,
+        "output"
+      ));
+    }
+
+    function renderReadout() {
+      const config = state.config;
+      if (!config) return;
+      els.gpioReadout.innerHTML = "";
+      for (let row = 0; row < config.rowCount; row += 1) {
+        const line = document.createElement("div");
+        line.className = "row-readout";
+        const label = document.createElement("div");
+        label.textContent = `drive row ${row}`;
+        const pins = document.createElement("div");
+        pins.className = "pins";
+        for (let col = 0; col < config.colCount; col += 1) {
+          const pin = document.createElement("span");
+          const on = state.pressed.has(coordKey(row, col));
+          pin.className = `pin ${on ? "on" : ""}`;
+          pin.textContent = `col ${col}${on ? " ON" : ""}`;
+          pins.appendChild(pin);
+        }
+        line.append(label, pins);
+        els.gpioReadout.appendChild(line);
+      }
+    }
+
+    function renderLayers() {
+      const config = state.config;
+      if (!config) return;
+      const active = new Set(activeLayerIndexes());
+      els.layerPills.innerHTML = "";
+      config.layers.forEach((layer, index) => {
+        const pill = document.createElement("span");
+        pill.className = `layer-pill ${active.has(index) ? "active" : ""}`;
+        pill.textContent = `${index}: ${layer.name}`;
+        els.layerPills.appendChild(pill);
+      });
+    }
+
+    function renderKeys() {
+      els.keyOutput.innerHTML = "";
+      if (!state.activeKeys.size) {
+        const empty = document.createElement("span");
+        empty.style.color = "var(--muted)";
+        empty.style.fontSize = "12px";
+        empty.textContent = "出力中のキーはありません";
+        els.keyOutput.appendChild(empty);
+        return;
+      }
+      [...state.activeKeys].sort().forEach((key) => {
+        const chip = document.createElement("span");
+        chip.className = "key-chip";
+        chip.textContent = key;
+        els.keyOutput.appendChild(chip);
+      });
+    }
+
+    function renderMappingTable() {
+      const config = state.config;
+      if (!config) return;
+      els.mappingTable.innerHTML = "";
+      const max = Math.max(config.transform.pairs.length, ...config.layers.map((l) => l.bindings.length), 0);
+      for (let pos = 0; pos < max; pos += 1) {
+        const pair = config.transform.pairs[pos];
+        const resolved = resolveBinding(pos);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${pos}</td>
+          <td>${pair ? `RC(${pair.row},${pair.col})` : "-"}</td>
+          <td>${bindingLabel(bindingAt(0, pos))}</td>
+          <td>${bindingLabel(resolved.binding)} <span style="color: var(--muted)">@ ${layerName(resolved.layerIndex)}</span></td>
+        `;
+        els.mappingTable.appendChild(tr);
+      }
+    }
+
+    function parseRepoSpec(value) {
+      const input = value.trim();
+      if (!input) throw new Error("repositoryを入力してください。");
+      const treeMatch = input.match(/^https?:\/\/github\.com\/([^/\s]+)\/([^/#?\s]+)\/tree\/([^#?\s]+)(?:[?#].*)?$/i);
+      if (treeMatch) {
+        return {
+          owner: treeMatch[1],
+          repo: treeMatch[2].replace(/\.git$/i, ""),
+          ref: decodeURIComponent(treeMatch[3])
+        };
+      }
+      const urlMatch = input.match(/^https?:\/\/github\.com\/([^/\s]+)\/([^/#?\s]+)(?:[/?#]|$)/i);
+      const shortMatch = input.match(/^([^/\s]+)\/([^/\s]+)$/);
+      const match = urlMatch || shortMatch;
+      if (!match) throw new Error("repositoryは owner/repo または GitHub URL で入力してください。");
+      return {
+        owner: match[1],
+        repo: match[2].replace(/\.git$/i, ""),
+        ref: ""
+      };
+    }
+
+    async function githubJson(url) {
+      const response = await fetch(url, {
+        headers: {
+          "Accept": "application/vnd.github+json"
+        }
+      });
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(`GitHub API ${response.status}: ${text || response.statusText}`);
+      }
+      return response.json();
+    }
+
+    function classifyRepoPath(path) {
+      const lower = path.toLowerCase();
+      if (lower.endsWith(".keymap")) return "keymap";
+      if (lower.endsWith(".overlay")) return "overlay";
+      if (lower.endsWith(".dtsi") || lower.endsWith(".dts")) return "dtsi";
+      if (lower.endsWith(".conf")) return "conf";
+      if (/\/kconfig(\.|$)/i.test(path) || /(^|\/)kconfig\.(defconfig|shield)$/i.test(path)) return "kconfig";
+      if (!lower.includes(".github/workflows/") && (lower === "build.yaml" || lower === "build.yml" || lower.endsWith("/build.yaml") || lower.endsWith("/build.yml"))) return "build";
+      return "";
+    }
+
+    function repoRank(file) {
+      let score = 0;
+      const path = file.path.toLowerCase();
+      if (file.kind === "keymap") score += 100;
+      if (file.kind === "overlay") score += 90;
+      if (file.kind === "dtsi") score += 70;
+      if (file.kind === "build") score += 65;
+      if (file.kind === "conf") score += 45;
+      if (file.kind === "kconfig") score += 40;
+      if (path.includes("/boards/shields/")) score += 20;
+      if (path.includes("/config/")) score += 10;
+      if (path.includes("default")) score += 8;
+      if (path.includes("keymap")) score += 8;
+      if (path.includes("overlay")) score += 6;
+      return score;
+    }
+
+    function decodeBase64Content(content) {
+      const binary = atob(content.replace(/\s/g, ""));
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+
+    function splitBuildTokens(value) {
+      return (value || "").split(/\s+/).map((item) => item.trim()).filter(Boolean);
+    }
+
+    function parseBuildYaml(text) {
+      const targets = [];
+      let current = null;
+      text.split(/\r?\n/).forEach((rawLine) => {
+        const line = rawLine.replace(/\s+#.*$/, "");
+        const start = line.match(/^\s*-\s+([A-Za-z0-9_-]+)\s*:\s*(.*?)\s*$/);
+        if (start) {
+          if (current) targets.push(current);
+          current = {};
+          current[start[1]] = start[2].replace(/^["']|["']$/g, "");
+          return;
+        }
+        const prop = line.match(/^\s+([A-Za-z0-9_-]+)\s*:\s*(.*?)\s*$/);
+        if (prop && current) {
+          current[prop[1]] = prop[2].replace(/^["']|["']$/g, "");
+        }
+      });
+      if (current) targets.push(current);
+
+      return targets
+        .filter((target) => target.board || target.shield || target.snippet || target["artifact-name"])
+        .map((target, index) => ({
+          index,
+          board: target.board || "",
+          shield: target.shield || "",
+          snippet: target.snippet || "",
+          artifactName: target["artifact-name"] || `${target.board || "build"}-${index + 1}`,
+          raw: target
+        }));
+    }
+
+    async function loadBuildYamlFromRepo() {
+      const buildFile = state.repoFiles.find((file) => file.kind === "build" && /^build\.ya?ml$/i.test(file.path))
+        || state.repoFiles.find((file) => file.kind === "build");
+      state.buildYamlText = "";
+      state.buildTargets = [];
+      if (!buildFile) {
+        renderBuildTargets();
+        return;
+      }
+      const blob = await githubJson(buildFile.url);
+      state.buildYamlText = decodeBase64Content(blob.content || "");
+      state.buildTargets = parseBuildYaml(state.buildYamlText);
+      renderBuildTargets();
+    }
+
+    function renderBuildTargets() {
+      if (!els.buildTargetSelect || !els.loadBuildTarget) return;
+      const selects = [els.buildTargetSelect, els.leftFirmwareSelect, els.rightFirmwareSelect].filter(Boolean);
+      const previous = new Map(selects.map((select) => [select, select.value]));
+      selects.forEach((select) => { select.innerHTML = ""; });
+      const slotButtons = [els.assignLeftFirmware, els.assignRightFirmware].filter(Boolean);
+      if (!state.buildTargets.length) {
+        selects.forEach((select) => {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "build.yaml not loaded";
+          select.appendChild(option);
+          select.disabled = true;
+        });
+        els.loadBuildTarget.disabled = true;
+        slotButtons.forEach((button) => { button.disabled = true; });
+        return;
+      }
+
+      selects.forEach((select) => {
+        state.buildTargets.forEach((target, index) => {
+          const option = document.createElement("option");
+          option.value = String(index);
+          const moduleText = [target.shield, target.snippet].filter(Boolean).join(" / ");
+          option.textContent = `${target.artifactName} (${moduleText || target.board || "build"})`;
+          select.appendChild(option);
+        });
+        select.disabled = false;
+      });
+
+      const leftIndex = state.buildTargets.findIndex((target) => firmwareSideFromTarget(target) === "left");
+      const rightIndex = state.buildTargets.findIndex((target) => firmwareSideFromTarget(target) === "right");
+      const setSelectValue = (select, fallbackIndex) => {
+        if (!select) return;
+        const oldValue = previous.get(select);
+        if (oldValue && state.buildTargets[Number(oldValue)]) {
+          select.value = oldValue;
+        } else if (fallbackIndex >= 0) {
+          select.value = String(fallbackIndex);
+        }
+      };
+      setSelectValue(els.leftFirmwareSelect, leftIndex);
+      setSelectValue(els.rightFirmwareSelect, rightIndex);
+      els.loadBuildTarget.disabled = false;
+      slotButtons.forEach((button) => { button.disabled = false; });
+    }
+
+    function applyRepoSample(value) {
+      if (value === "geacon") {
+        els.repoInput.value = "te9no/zmk-config-GeaconPolaris";
+        els.refInput.value = "";
+      } else if (value === "saa-iqs") {
+        els.repoInput.value = "https://github.com/te9no/zmk-config-SparAkashaAnanta/tree/feat/add-iqs-module-and-led-support";
+        els.refInput.value = "";
+      }
+    }
+
+    async function fetchGithubRepo() {
+      let repo;
+      try {
+        repo = parseRepoSpec(els.repoInput.value);
+      } catch (error) {
+        setRepoNotice(error.message, false);
+        return;
+      }
+
+      const originalText = els.fetchRepo.textContent;
+      els.fetchRepo.disabled = true;
+      els.fetchRepo.textContent = "取得中";
+      setRepoNotice(`${repo.owner}/${repo.repo} を確認しています。`, true);
+      state.repoFiles = [];
+      state.buildYamlText = "";
+      state.buildTargets = [];
+      state.activeFirmware = null;
+      state.firmwareSlots.left = null;
+      state.firmwareSlots.right = null;
+      state.firmwareSlotConfigs.left = null;
+      state.firmwareSlotConfigs.right = null;
+      renderRepoFiles();
+      renderBuildTargets();
+
+      try {
+        const repoApi = `https://api.github.com/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}`;
+        const repoInfo = await githubJson(repoApi);
+        const ref = els.refInput.value.trim() || repo.ref || repoInfo.default_branch;
+        els.refInput.value = ref;
+        const treeApi = `${repoApi}/git/trees/${encodeURIComponent(ref)}?recursive=1`;
+        const treeInfo = await githubJson(treeApi);
+        const files = (treeInfo.tree || [])
+          .filter((entry) => entry.type === "blob")
+          .map((entry) => ({
+            owner: repo.owner,
+            repo: repo.repo,
+            ref,
+            path: entry.path,
+            url: entry.url,
+            size: entry.size || 0,
+            kind: classifyRepoPath(entry.path)
+          }))
+          .filter((file) => ["keymap", "overlay", "dtsi", "conf", "kconfig", "build"].includes(file.kind))
+          .sort((a, b) => repoRank(b) - repoRank(a) || a.path.localeCompare(b.path));
+
+        state.repoFiles = files;
+        await loadBuildYamlFromRepo();
+        renderRepoFiles();
+        if (!files.length) {
+          setRepoNotice("ZMK設定候補が見つかりませんでした。refやリポジトリを確認してください。", false);
+        } else {
+          setRepoNotice(`${files.length} 件の候補を検出しました。読み込み先を選んでください。`, true);
+        }
+      } catch (error) {
+        setRepoNotice(error.message, false);
+      } finally {
+        els.fetchRepo.disabled = false;
+        els.fetchRepo.textContent = originalText;
+      }
+    }
+
+    function setRepoNotice(message, ok) {
+      els.repoNotice.className = `notice ${ok ? "ok" : ""}`;
+      els.repoNotice.textContent = message;
+    }
+
+    function renderRepoFiles() {
+      els.repoFiles.innerHTML = "";
+      if (!state.repoFiles.length) {
+        const empty = document.createElement("div");
+        empty.style.color = "var(--muted)";
+        empty.style.fontSize = "12px";
+        empty.textContent = "候補ファイルはまだありません";
+        els.repoFiles.appendChild(empty);
+        return;
+      }
+
+      state.repoFiles.forEach((file, index) => {
+        const row = document.createElement("div");
+        row.className = "repo-file";
+
+        const path = document.createElement("div");
+        path.className = "repo-path";
+        path.title = file.path;
+        path.textContent = file.path;
+
+        const kind = document.createElement("div");
+        kind.className = "repo-kind";
+        kind.textContent = `${file.kind} ${(file.size / 1024).toFixed(1)}KB`;
+
+        const actions = document.createElement("div");
+        actions.className = "split-controls";
+
+        const overlayButton = document.createElement("button");
+        overlayButton.type = "button";
+        overlayButton.textContent = "overlayへ";
+        overlayButton.title = "このファイルをoverlay/dtsi欄へ読み込み";
+        overlayButton.addEventListener("click", () => loadGithubFile(index, "overlay"));
+
+        const keymapButton = document.createElement("button");
+        keymapButton.type = "button";
+        keymapButton.textContent = "keymapへ";
+        keymapButton.title = "このファイルをkeymap欄へ読み込み";
+        keymapButton.addEventListener("click", () => loadGithubFile(index, "keymap"));
+
+        actions.append(overlayButton, keymapButton);
+        row.append(path, kind, actions);
+        els.repoFiles.appendChild(row);
+      });
+    }
+
+    async function loadGithubFile(index, target) {
+      const file = state.repoFiles[index];
+      if (!file) return;
+      setRepoNotice(`${file.path} を読み込んでいます。`, true);
+      try {
+        const blob = await githubJson(file.url);
+        const text = decodeBase64Content(blob.content || "");
+        if (target === "keymap") {
+          els.keymapInput.value = text;
+        } else {
+          els.overlayInput.value = text;
+        }
+        setRepoNotice(`${file.path} を ${target} 欄へ読み込みました。`, true);
+        parseConfig();
+      } catch (error) {
+        setRepoNotice(error.message, false);
+      }
+    }
+
+    function fileBaseName(path) {
+      return path.split("/").pop().replace(/\.(overlay|dtsi|dts|keymap|conf|ya?ml)$/i, "");
+    }
+
+    function firmwareSideFromTarget(target) {
+      const text = `${target.artifactName} ${target.shield}`.toUpperCase();
+      if (/(^|[_\s-])L([_\s-]|$)/.test(text) || /_L_/.test(text)) return "left";
+      if (/(^|[_\s-])R([_\s-]|$)/.test(text) || /_R_/.test(text)) return "right";
+      return "unknown";
+    }
+
+    function configSymbolsFromConf(text) {
+      const symbols = new Map();
+      text.split(/\r?\n/).forEach((line) => {
+        const match = line.match(/^\s*CONFIG_([A-Za-z0-9_]+)\s*=\s*(.+?)\s*$/);
+        if (match) symbols.set(match[1], match[2].replace(/^"|"$/g, ""));
+      });
+      return symbols;
+    }
+
+    function configSymbolsFromKconfig(text) {
+      const symbols = new Map();
+      const lines = text.split(/\r?\n/);
+      for (let i = 0; i < lines.length; i += 1) {
+        const config = lines[i].match(/^\s*config\s+([A-Za-z0-9_]+)\s*$/);
+        if (!config) continue;
+        for (let j = i + 1; j < Math.min(lines.length, i + 8); j += 1) {
+          const def = lines[j].match(/^\s*default\s+(.+?)\s*$/);
+          if (def) {
+            symbols.set(config[1], def[1].replace(/^"|"$/g, ""));
+            break;
+          }
+          if (/^\s*config\s+/.test(lines[j])) break;
+        }
+      }
+      return symbols;
+    }
+
+    function mergeSymbols(target, sources) {
+      const symbols = new Map();
+      sources.forEach((source) => {
+        source.symbols.forEach((value, key) => symbols.set(key, value));
+      });
+
+      const split = symbols.get("ZMK_SPLIT") === "y" || /SAA_|Polaris_/i.test(target.shield);
+      const central = symbols.get("ZMK_SPLIT_ROLE_CENTRAL") === "y"
+        || Boolean(symbols.get("ZMK_SPLIT_BLE_CENTRAL_PERIPHERALS"));
+      const centralDisabled = symbols.get("ZMK_SPLIT_ROLE_CENTRAL") === "n";
+      const role = !split
+        ? "standalone"
+        : central && !centralDisabled
+          ? "central"
+          : "peripheral";
+
+      return {
+        target: target.artifactName,
+        board: target.board,
+        shield: target.shield,
+        snippet: target.snippet,
+        side: firmwareSideFromTarget(target),
+        role,
+        split,
+        confFiles: sources.map((source) => source.path),
+        symbols: Object.fromEntries(symbols)
+      };
+    }
+
+    async function collectFirmwareMetadata(target) {
+      const shields = new Set(splitBuildTokens(target.shield));
+      const snippets = new Set(splitBuildTokens(target.snippet));
+      const files = [];
+      const seen = new Set();
+      const add = (file) => {
+        if (!file || seen.has(file.path)) return;
+        seen.add(file.path);
+        files.push(file);
+      };
+
+      state.repoFiles
+        .filter((file) => file.kind === "kconfig" && file.path.includes("boards/shields/"))
+        .forEach(add);
+
+      state.repoFiles
+        .filter((file) => file.kind === "conf" && file.path.includes("boards/shields/"))
+        .filter((file) => shields.has(fileBaseName(file.path)))
+        .forEach(add);
+
+      state.repoFiles
+        .filter((file) => file.kind === "conf" && file.path.startsWith("snippets/"))
+        .filter((file) => {
+          const parts = file.path.split("/");
+          return snippets.has(parts[1]) || snippets.has(fileBaseName(file.path));
+        })
+        .forEach(add);
+
+      const sources = [];
+      for (const file of files) {
+        const blob = await githubJson(file.url);
+        const text = decodeBase64Content(blob.content || "");
+        sources.push({
+          path: file.path,
+          symbols: file.kind === "kconfig" ? configSymbolsFromKconfig(text) : configSymbolsFromConf(text)
+        });
+      }
+      return mergeSymbols(target, sources);
+    }
+
+    function filesForBuildTarget(target) {
+      const shields = new Set(splitBuildTokens(target.shield));
+      const snippets = new Set(splitBuildTokens(target.snippet));
+      const selected = [];
+      const seen = new Set();
+      const add = (file) => {
+        if (!file || seen.has(file.path)) return;
+        seen.add(file.path);
+        selected.push(file);
+      };
+
+      state.repoFiles
+        .filter((file) => file.kind === "overlay")
+        .filter((file) => file.path.includes("boards/shields/"))
+        .filter((file) => shields.has(fileBaseName(file.path)))
+        .forEach(add);
+
+      state.repoFiles
+        .filter((file) => file.kind === "overlay")
+        .filter((file) => file.path.startsWith("snippets/"))
+        .filter((file) => {
+          const parts = file.path.split("/");
+          return snippets.has(parts[1]) || snippets.has(fileBaseName(file.path));
+        })
+        .forEach(add);
+
+      return selected.sort((a, b) => repoRank(b) - repoRank(a) || a.path.localeCompare(b.path));
+    }
+
+    function resolveRepoInclude(fromPath, includePath) {
+      const base = fromPath.split("/").slice(0, -1);
+      includePath.split("/").forEach((part) => {
+        if (!part || part === ".") return;
+        if (part === "..") base.pop();
+        else base.push(part);
+      });
+      const normalized = base.join("/");
+      return state.repoFiles.find((file) => file.path === normalized);
+    }
+
+    async function collectBuildTargetParts(target) {
+      const initialFiles = filesForBuildTarget(target);
+      const queue = [...initialFiles];
+      const seen = new Set();
+      const parts = [
+        `/* build target: ${target.artifactName} */`,
+        `/* board: ${target.board || "-"} */`,
+        `/* shield: ${target.shield || "-"} */`,
+        `/* snippet: ${target.snippet || "-"} */`
+      ];
+
+      while (queue.length) {
+        const file = queue.shift();
+        if (!file || seen.has(file.path)) continue;
+        seen.add(file.path);
+        const blob = await githubJson(file.url);
+        const text = decodeBase64Content(blob.content || "");
+        parts.push(`\n/* ---- ${file.path} ---- */\n${text}`);
+
+        const includeRe = /^\s*#include\s+"([^"]+)"/gm;
+        let match;
+        while ((match = includeRe.exec(text))) {
+          const includeFile = resolveRepoInclude(file.path, match[1]);
+          if (includeFile && !seen.has(includeFile.path)) queue.push(includeFile);
+        }
+      }
+
+      return { files: [...seen], parts };
+    }
+
+    async function loadSelectedBuildTarget() {
+      const index = Number(els.buildTargetSelect?.value);
+      const target = state.buildTargets[index];
+      if (!target) {
+        setRepoNotice("build targetを選択してください。", false);
+        return;
+      }
+      const initialFiles = filesForBuildTarget(target);
+      if (!initialFiles.length) {
+        setRepoNotice(`${target.artifactName}: 対応するoverlay/dtsiが見つかりません。`, false);
+        return;
+      }
+
+      const originalText = els.loadBuildTarget.textContent;
+      els.loadBuildTarget.disabled = true;
+      els.loadBuildTarget.textContent = "読込中";
+      setRepoNotice(`${target.artifactName}: build.yaml targetを読み込み中。`, true);
+
+      try {
+        const { files, parts } = await collectBuildTargetParts(target);
+        state.activeFirmware = await collectFirmwareMetadata(target);
+        els.overlayInput.value = parts.join("\n");
+
+        const keymap = state.repoFiles.find((file) => file.kind === "keymap" && file.path.startsWith("config/"))
+          || state.repoFiles.find((file) => file.kind === "keymap");
+        if (keymap) {
+          const blob = await githubJson(keymap.url);
+          els.keymapInput.value = decodeBase64Content(blob.content || "");
+        }
+
+        setRepoNotice(`${target.artifactName}: build.yamlのshield/snippet/includeから${files.length} file(s)と${keymap ? keymap.path : "no keymap"}を読み込みました。`, true);
+        parseConfig();
+      } catch (error) {
+        setRepoNotice(error.message, false);
+      } finally {
+        els.loadBuildTarget.disabled = false;
+        els.loadBuildTarget.textContent = originalText;
+      }
+    }
+
+    async function loadBuildTargetToSlot(slot, button) {
+      const select = slot === "left"
+        ? els.leftFirmwareSelect
+        : slot === "right"
+          ? els.rightFirmwareSelect
+          : els.buildTargetSelect;
+      const index = Number(select?.value);
+      const target = state.buildTargets[index];
+      if (!target) {
+        setRepoNotice("Select a build target first.", false);
+        return;
+      }
+      const initialFiles = filesForBuildTarget(target);
+      if (!initialFiles.length) {
+        setRepoNotice(`${target.artifactName}: no matching overlay/dtsi files found.`, false);
+        return;
+      }
+
+      const originalText = button?.textContent;
+      if (button) {
+        button.disabled = true;
+        button.textContent = "loading";
+      }
+      const slotText = slot ? `${slot} firmware` : "active firmware";
+      setRepoNotice(`${target.artifactName}: loading ${slotText}.`, true);
+
+      try {
+        const { files, parts } = await collectBuildTargetParts(target);
+        const firmware = await collectFirmwareMetadata(target);
+        state.activeFirmware = firmware;
+        if (slot === "left" || slot === "right") {
+          state.firmwareSlots[slot] = firmware;
+        }
+        els.overlayInput.value = parts.join("\n");
+
+        const keymap = state.repoFiles.find((file) => file.kind === "keymap" && file.path.startsWith("config/"))
+          || state.repoFiles.find((file) => file.kind === "keymap");
+        if (keymap) {
+          const blob = await githubJson(keymap.url);
+          els.keymapInput.value = decodeBase64Content(blob.content || "");
+        }
+
+        const slotNote = slot ? ` assigned to ${slot}` : " loaded as active";
+        setRepoNotice(`${target.artifactName}:${slotNote}; ${files.length} file(s), ${keymap ? keymap.path : "no keymap"}.`, true);
+        parseConfig();
+        if (slot === "left" || slot === "right") {
+          state.firmwareSlotConfigs[slot] = state.config;
+          renderSummary();
+        }
+      } catch (error) {
+        setRepoNotice(error.message, false);
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      }
+    }
+
+    async function loadGithubBundle() {
+      const files = state.repoFiles.filter((file) => ["overlay", "dtsi"].includes(file.kind));
+      if (!files.length) {
+        setRepoNotice("結合できるoverlay/dtsi候補がありません。先にリポジトリを取得してください。", false);
+        return;
+      }
+
+      const originalText = els.loadRepoBundle.textContent;
+      els.loadRepoBundle.disabled = true;
+      els.loadRepoBundle.textContent = "読込中";
+      setRepoNotice(`${files.length} 件のoverlay/dtsiを結合しています。`, true);
+
+      try {
+        const parts = [];
+        for (const file of files) {
+          const blob = await githubJson(file.url);
+          const text = decodeBase64Content(blob.content || "");
+          parts.push(`\n/* ---- ${file.path} ---- */\n${text}`);
+        }
+        els.overlayInput.value = parts.join("\n");
+
+        const keymap = state.repoFiles.find((file) => file.kind === "keymap");
+        if (keymap && els.keymapInput.value === sampleKeymap) {
+          const blob = await githubJson(keymap.url);
+          els.keymapInput.value = decodeBase64Content(blob.content || "");
+        }
+
+        setRepoNotice(`${files.length} 件をoverlay欄へ結合しました。`, true);
+        parseConfig();
+      } catch (error) {
+        setRepoNotice(error.message, false);
+      } finally {
+        els.loadRepoBundle.disabled = false;
+        els.loadRepoBundle.textContent = originalText;
+      }
+    }
+
+    async function pasteInto(target) {
+      try {
+        target.value = await navigator.clipboard.readText();
+      } catch (error) {
+        log(`Clipboard read failed: ${error.message}`);
+      }
+    }
+
+    function panelKey(panel, index) {
+      if (panel.id) return panel.id;
+      const title = panel.querySelector(":scope > .panel-head h2")?.textContent?.trim() || "panel";
+      return `${index}:${title}`;
+    }
+
+    function renderPanelCollapse(panel, button, key) {
+      const collapsed = state.collapsedPanels.has(key);
+      panel.classList.toggle("collapsed", collapsed);
+      button.textContent = collapsed ? "+" : "-";
+      button.title = collapsed ? "panelを開く" : "panelを折りたたむ";
+      button.setAttribute("aria-expanded", String(!collapsed));
+    }
+
+    function setupCollapsiblePanels() {
+      document.querySelectorAll(".panel").forEach((panel, index) => {
+        const head = panel.querySelector(":scope > .panel-head");
+        const body = panel.querySelector(":scope > .panel-body");
+        if (!head || !body || head.querySelector(":scope > .panel-collapse")) return;
+
+        const key = panelKey(panel, index);
+        panel.dataset.panelKey = key;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "panel-collapse";
+        renderPanelCollapse(panel, button, key);
+        button.addEventListener("click", () => {
+          toggleSetItem(state.collapsedPanels, key);
+          renderPanelCollapse(panel, button, key);
+        });
+        head.appendChild(button);
+      });
+    }
+
+    function renderAllPanelCollapses() {
+      document.querySelectorAll(".panel").forEach((panel) => {
+        const key = panel.dataset.panelKey;
+        const button = panel.querySelector(":scope > .panel-head > .panel-collapse");
+        if (key && button) renderPanelCollapse(panel, button, key);
+      });
+    }
+
+    function setupZenTargets() {
+      document.querySelectorAll(".panel").forEach((panel) => {
+        const title = panel.querySelector(":scope > .panel-head h2")?.textContent?.trim();
+        panel.classList.toggle("zen-physical", title === "Physical Layout");
+        panel.classList.toggle("zen-visible", title === "Physical Layout" || panel.id === "inputPreviewPanelShell");
+      });
+    }
+
+    function renderZenMode() {
+      document.body.classList.toggle("zen-mode", state.zenMode);
+      const button = document.getElementById("toggleZenMode");
+      if (button) {
+        button.textContent = state.zenMode ? "Exit Zen" : "Zen";
+        button.classList.toggle("primary", state.zenMode);
+        button.setAttribute("aria-pressed", String(state.zenMode));
+      }
+      if (state.zenMode) {
+        const visibleKeys = Array.from(document.querySelectorAll(".zen-visible"))
+          .map((panel) => panel.dataset.panelKey)
+          .filter(Boolean);
+        visibleKeys.forEach((key) => state.collapsedPanels.delete(key));
+        renderAllPanelCollapses();
+        setPreviewTab("processors");
+      }
+    }
+
+    function setZenMode(enabled) {
+      state.zenMode = enabled;
+      renderZenMode();
+    }
+
+    function setAllPanelsCollapsed(collapsed) {
+      document.querySelectorAll(".panel").forEach((panel) => {
+        const key = panel.dataset.panelKey;
+        if (!key) return;
+        if (collapsed) state.collapsedPanels.add(key);
+        else state.collapsedPanels.delete(key);
+      });
+      renderAllPanelCollapses();
+    }
+
+    function setupGlobalPanelControls() {
+      const actions = document.querySelector(".top-actions");
+      if (!actions || document.getElementById("collapseAllPanels")) return;
+
+      const zen = document.createElement("button");
+      zen.id = "toggleZenMode";
+      zen.type = "button";
+      zen.textContent = "Zen";
+      zen.title = "Show only physical layout and input processor reaction";
+      zen.setAttribute("aria-pressed", "false");
+      zen.addEventListener("click", () => setZenMode(!state.zenMode));
+
+      const fold = document.createElement("button");
+      fold.id = "collapseAllPanels";
+      fold.type = "button";
+      fold.textContent = "Fold all";
+      fold.title = "Collapse all panels";
+      fold.addEventListener("click", () => setAllPanelsCollapsed(true));
+
+      const open = document.createElement("button");
+      open.id = "expandAllPanels";
+      open.type = "button";
+      open.textContent = "Open all";
+      open.title = "Expand all panels";
+      open.addEventListener("click", () => setAllPanelsCollapsed(false));
+
+      actions.prepend(zen, fold, open);
+    }
+
+    let inputPreviewPlaceholder = null;
+
+    function placeInputPreviewPanel() {
+      const shell = document.getElementById("inputPreviewPanelShell");
+      const main = document.querySelector("main");
+      if (!shell || !main) return;
+
+      if (!inputPreviewPlaceholder && shell.parentNode) {
+        inputPreviewPlaceholder = document.createComment("input preview original position");
+        shell.parentNode.insertBefore(inputPreviewPlaceholder, shell);
+      }
+
+      if (window.matchMedia("(min-width: 981px)").matches) {
+        if (shell.parentElement !== main) {
+          main.appendChild(shell);
+        }
+      } else if (inputPreviewPlaceholder?.parentNode && shell.parentElement === main) {
+        inputPreviewPlaceholder.parentNode.insertBefore(shell, inputPreviewPlaceholder.nextSibling);
+      }
+    }
+
+    function setupPreviewTabs() {
+      placeInputPreviewPanel();
+      const shell = document.getElementById("inputPreviewPanelShell");
+      const main = document.querySelector("main");
+      if (shell && main && window.matchMedia("(min-width: 981px)").matches && shell.parentElement !== main) {
+        main.appendChild(shell);
+      }
+      const parent = els.sensorNotice?.parentElement;
+      if (!parent || els.sensorPreviewPanel || els.processorPreviewPanel) return;
+
+      const sensorPanel = document.createElement("div");
+      sensorPanel.id = "sensorPreviewPanel";
+      sensorPanel.className = "tab-panel";
+
+      const processorPanel = document.createElement("div");
+      processorPanel.id = "processorPreviewPanel";
+      processorPanel.className = "tab-panel";
+
+      const processorNotice = document.createElement("div");
+      processorNotice.id = "processorNotice";
+      processorNotice.className = "notice";
+      processorNotice.textContent = "Input processor chain graph and latest processor trace.";
+
+      parent.insertBefore(sensorPanel, els.sensorNotice);
+      sensorPanel.append(els.sensorNotice, els.sensorList, els.pointerList);
+      processorPanel.append(processorNotice, els.processorList, els.processorTrace);
+      parent.appendChild(processorPanel);
+
+      els.sensorPreviewPanel = sensorPanel;
+      els.processorPreviewPanel = processorPanel;
+      els.processorNotice = processorNotice;
+      renderPreviewTabs();
+    }
+
+    function setPreviewTab(tab) {
+      state.activePreviewTab = tab;
+      renderPreviewTabs();
+    }
+
+    function renderPreviewTabs() {
+      const processors = state.activePreviewTab === "processors";
+      els.previewTabSensors?.classList.toggle("active", !processors);
+      els.previewTabProcessors?.classList.toggle("active", processors);
+      if (els.previewTabSensors) els.previewTabSensors.setAttribute("aria-selected", String(!processors));
+      if (els.previewTabProcessors) els.previewTabProcessors.setAttribute("aria-selected", String(processors));
+      if (els.sensorPreviewPanel) els.sensorPreviewPanel.hidden = processors;
+      if (els.processorPreviewPanel) els.processorPreviewPanel.hidden = !processors;
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      els.modeToggle.classList.toggle("active", mode === "toggle");
+      els.modeMomentary.classList.toggle("active", mode === "momentary");
+      renderMatrix();
+      renderPhysicalLayout();
+    }
+
+    function renderLiveInputState() {
+      state.livePointer = true;
+      els.toggleKeyboardCapture.classList.toggle("primary", state.liveKeyboard);
+      els.togglePointerCapture.classList.add("primary");
+      els.togglePointerCapture.disabled = true;
+      els.togglePointerCapture.textContent = "Pointer ON";
+      els.togglePointerCapture.title = "Pointer input is always captured inside live input zones";
+      els.togglePointerCapture.setAttribute("aria-disabled", "true");
+      els.keyboardCaptureState.className = `pin ${state.liveKeyboard ? "on" : ""}`;
+      els.pointerCaptureState.className = "pin on";
+      els.keyboardCaptureState.textContent = `Keyboard ${state.liveKeyboard ? "ON" : "OFF"}`;
+      els.pointerCaptureState.textContent = "Pointer ON";
+      els.liveInputTarget.classList.toggle("active", state.liveKeyboard || state.livePointer);
+      document.querySelectorAll(".processor-live-zone").forEach((zone) => {
+        zone.classList.add("active");
+      });
+      document.querySelectorAll(".processor-pointer-state").forEach((pin) => {
+        pin.className = "pin processor-pointer-state on";
+        pin.textContent = "Pointer ON";
+      });
+      els.liveInputNotice.className = `notice ${state.liveKeyboard || state.livePointer ? "ok" : ""}`;
+      els.liveInputNotice.textContent = state.liveKeyboard || state.livePointer
+        ? "キャプチャ中です。このページ/領域にフォーカスがある間、実入力を仮想ZMKイベントとして扱います。"
+        : "KeyboardをONにすると実キー入力をkeymapから逆引きします。PointerをONにするとこの領域上のマウス移動/ホイール/クリックをinput eventとして扱います。";
+    }
+
+    function setKeyboardCapture(enabled) {
+      state.liveKeyboard = enabled;
+      if (!enabled) state.livePressedByCode.clear();
+      renderLiveInputState();
+      if (enabled) els.liveInputTarget.focus();
+      log(`LIVE keyboard capture ${enabled ? "on" : "off"}`);
+    }
+
+    function setPointerCapture() {
+      state.livePointer = true;
+      renderLiveInputState();
+      const selectedZone = state.livePointerDeviceName
+        ? document.querySelector(`.processor-live-zone[data-live-device="${CSS.escape(state.livePointerDeviceName)}"]`)
+        : null;
+      (selectedZone || els.liveInputTarget).focus();
+      log("LIVE pointer capture always on");
+    }
+
+    els.loadSample.addEventListener("click", () => {
+      els.overlayInput.value = sampleOverlay;
+      els.keymapInput.value = sampleKeymap;
+      state.activeFirmware = null;
+      state.firmwareSlots.left = null;
+      state.firmwareSlots.right = null;
+      state.firmwareSlotConfigs.left = null;
+      state.firmwareSlotConfigs.right = null;
+      parseConfig();
+    });
+    els.parse.addEventListener("click", parseConfig);
+    els.resetState.addEventListener("click", () => {
+      resetRuntime(true);
+      renderAll();
+      log("STATE reset");
+    });
+    els.clearLog.addEventListener("click", () => {
+      state.logLines = [];
+      els.eventLog.textContent = "";
+    });
+    els.scanOnce.addEventListener("click", scanOnce);
+    els.modeToggle.addEventListener("click", () => setMode("toggle"));
+    els.modeMomentary.addEventListener("click", () => setMode("momentary"));
+    els.previewTabSensors?.addEventListener("click", () => setPreviewTab("sensors"));
+    els.previewTabProcessors?.addEventListener("click", () => setPreviewTab("processors"));
+    els.toggleKeyboardCapture.addEventListener("click", () => setKeyboardCapture(!state.liveKeyboard));
+    els.togglePointerCapture.addEventListener("click", () => setPointerCapture());
+    els.connectTraceDevice.addEventListener("click", connectTraceDevice);
+    els.disconnectTraceDevice.addEventListener("click", disconnectTraceDevice);
+    document.addEventListener("keydown", handleLiveKeyDown);
+    document.addEventListener("keyup", handleLiveKeyUp);
+    els.liveInputTarget.addEventListener("wheel", handleLiveWheel, { passive: false });
+    els.liveInputTarget.addEventListener("pointermove", handleLivePointerMove);
+    els.liveInputTarget.addEventListener("pointerdown", (event) => handleLivePointerButton(event, true));
+    els.liveInputTarget.addEventListener("pointerup", (event) => handleLivePointerButton(event, false));
+    els.liveInputTarget.addEventListener("contextmenu", (event) => {
+      if (state.livePointer) event.preventDefault();
+    });
+    els.pasteOverlay.addEventListener("click", () => pasteInto(els.overlayInput));
+    els.pasteKeymap.addEventListener("click", () => pasteInto(els.keymapInput));
+    els.sampleRepoSelect?.addEventListener("change", () => applyRepoSample(els.sampleRepoSelect.value));
+    els.fetchRepo.addEventListener("click", fetchGithubRepo);
+    els.loadRepoBundle.addEventListener("click", loadGithubBundle);
+    els.loadBuildTarget?.addEventListener("click", () => loadBuildTargetToSlot(null, els.loadBuildTarget));
+    els.assignLeftFirmware?.addEventListener("click", () => loadBuildTargetToSlot("left", els.assignLeftFirmware));
+    els.assignRightFirmware?.addEventListener("click", () => loadBuildTargetToSlot("right", els.assignRightFirmware));
+    els.repoInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") fetchGithubRepo();
+    });
+    els.refInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") fetchGithubRepo();
+    });
+    window.addEventListener("resize", placeInputPreviewPanel);
+
+    els.overlayInput.value = sampleOverlay;
+    els.keymapInput.value = sampleKeymap;
+    window.zmkSim = {
+      parseConfig,
+      renderAll,
+      getState: () => state,
+      handleTraceJson,
+      renderProcessorTrace,
+      triggerPointer,
+      triggerSensor
+    };
+    setupPreviewTabs();
+    setupCollapsiblePanels();
+    setupZenTargets();
+    setupGlobalPanelControls();
+    renderZenMode();
+    renderRepoFiles();
+    renderLiveInputState();
+    renderTraceDeviceState();
+    parseConfig();
+  </script>
+</body>
+</html>
