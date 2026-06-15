@@ -3409,6 +3409,50 @@
       }
     }
 
+    function compactTraceMessage(line) {
+      const parts = line.split(",");
+      if (parts.length < 6 || parts[0] !== "i") return null;
+
+      const stage = parts[1] || "stage";
+      const type = Number(parts[2]);
+      const code = Number(parts[3]);
+      const value = Number(parts[4]);
+      const sync = Number(parts[5]) !== 0;
+      const values = { x: 0, y: 0, scroll_x: 0, scroll_y: 0 };
+
+      if (type === 2) {
+        if (code === 0) values.x = value;
+        if (code === 1) values.y = value;
+        if (code === 6) values.scroll_x = value;
+        if (code === 8) values.scroll_y = value;
+      }
+
+      return {
+        type: "input_stage",
+        stage,
+        event: { type, code, value, sync },
+        before: values,
+        after: values
+      };
+    }
+
+    function parseTraceLine(line) {
+      const clean = line.replace(/\x1b\[[0-9;]*m/g, "").trim();
+      if (!clean) return null;
+
+      const compact = compactTraceMessage(clean);
+      if (compact) return compact;
+
+      const jsonStart = clean.indexOf("{");
+      if (jsonStart < 0) return null;
+
+      try {
+        return JSON.parse(clean.slice(jsonStart));
+      } catch (error) {
+        return null;
+      }
+    }
+
     function renderTraceDeviceState() {
       els.connectTraceDevice.disabled = state.traceConnected;
       els.disconnectTraceDevice.disabled = !state.traceConnected;
@@ -3433,11 +3477,8 @@
               const lines = buffer.split(/\r?\n/);
               buffer = lines.pop() || "";
               lines.map((line) => line.trim()).filter(Boolean).forEach((line) => {
-                try {
-                  handleTraceJson(JSON.parse(line));
-                } catch (error) {
-                  log(`TRACE parse error: ${line}`);
-                }
+                const message = parseTraceLine(line);
+                if (message) handleTraceJson(message);
               });
             }
           } finally {
