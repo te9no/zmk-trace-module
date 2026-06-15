@@ -12,6 +12,14 @@ config ZMK_TRACE_INPUT_PROCESSOR
     bool "Enable trace input processor"
     default y
 
+config ZMK_TRACE_EVENTS
+    bool "Enable ZMK event trace listener"
+    default n
+
+config ZMK_TRACE_INPUT_COMPACT
+    bool "Use compact input processor trace lines"
+    default y
+
 config ZMK_TRACE_BUFFER_SIZE
     int "Trace line buffer size"
     default 192

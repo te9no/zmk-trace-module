@@ -6,6 +6,7 @@
 #include <zmk/events/position_state_changed.h>
 #include <zmk/events/keycode_state_changed.h>
 
+#if IS_ENABLED(CONFIG_ZMK_TRACE_EVENTS)
 static int zmk_trace_listener(const zmk_event_t *eh) {
     const struct zmk_position_state_changed *pos = as_zmk_position_state_changed(eh);
     if (pos != NULL) {
@@ -43,3 +44,4 @@ ZMK_LISTENER(zmk_trace, zmk_trace_listener);
 ZMK_SUBSCRIPTION(zmk_trace, zmk_position_state_changed);
 ZMK_SUBSCRIPTION(zmk_trace, zmk_keycode_state_changed);
 ZMK_SUBSCRIPTION(zmk_trace, zmk_layer_state_changed);
+#endif

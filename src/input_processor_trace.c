@@ -60,6 +60,10 @@ static int trace_input_processor_handle_event(const struct device *dev, struct i
     event_to_values(event, &x, &y, &scroll_x, &scroll_y);
 
     char line[CONFIG_ZMK_TRACE_BUFFER_SIZE];
+#if IS_ENABLED(CONFIG_ZMK_TRACE_INPUT_COMPACT)
+    snprintk(line, sizeof(line), "i,%s,%u,%u,%d,%u", config->stage, event->type, event->code,
+             event->value, event->sync ? 1 : 0);
+#else
     snprintk(line, sizeof(line),
              "{\"type\":\"input_stage\",\"processor\":\"%s\",\"stage\":\"%s\","
              "\"event\":{\"type\":%u,\"code\":%u,\"code_name\":\"%s\",\"value\":%d,\"sync\":%s},"
@@ -69,6 +73,7 @@ static int trace_input_processor_handle_event(const struct device *dev, struct i
              dev->name, config->stage, event->type, event->code, event_code_name(event->code),
              event->value, event->sync ? "true" : "false", x, y, scroll_x, scroll_y, x, y,
              scroll_x, scroll_y, state ? state->input_device_index : 0, param1, param2);
+#endif
     zmk_trace_emit_json(line);
 
     return ZMK_INPUT_PROC_CONTINUE;
