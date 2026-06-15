@@ -6,6 +6,7 @@
 #include <zephyr/input/input.h>
 #include <zephyr/kernel.h>
 #include <drivers/input_processor.h>
+#include <zmk/keymap.h>
 
 struct zmk_trace_input_processor_config {
     const char *stage;
@@ -60,19 +61,24 @@ static int trace_input_processor_handle_event(const struct device *dev, struct i
     event_to_values(event, &x, &y, &scroll_x, &scroll_y);
 
     char line[CONFIG_ZMK_TRACE_BUFFER_SIZE];
+    const uint8_t listener_index = state ? state->input_device_index : 0;
+    const uint8_t active_layer = zmk_keymap_highest_layer_active();
+    const zmk_keymap_layers_state_t layer_state = zmk_keymap_layer_state();
 #if IS_ENABLED(CONFIG_ZMK_TRACE_INPUT_COMPACT)
-    snprintk(line, sizeof(line), "i,%s,%u,%u,%d,%u", config->stage, event->type, event->code,
-             event->value, event->sync ? 1 : 0);
+    snprintk(line, sizeof(line), "i,%s,%u,%u,%d,%u,%u,%u,0x%08x", config->stage, event->type,
+             event->code, event->value, event->sync ? 1 : 0, listener_index, active_layer,
+             layer_state);
 #else
     snprintk(line, sizeof(line),
              "{\"type\":\"input_stage\",\"processor\":\"%s\",\"stage\":\"%s\","
              "\"event\":{\"type\":%u,\"code\":%u,\"code_name\":\"%s\",\"value\":%d,\"sync\":%s},"
              "\"before\":{\"x\":%d,\"y\":%d,\"scroll_x\":%d,\"scroll_y\":%d},"
              "\"after\":{\"x\":%d,\"y\":%d,\"scroll_x\":%d,\"scroll_y\":%d},"
-             "\"data\":{\"input_device_index\":%u,\"param1\":%u,\"param2\":%u}}",
+             "\"data\":{\"input_device_index\":%u,\"active_layer\":%u,\"layer_state\":%u,"
+             "\"param1\":%u,\"param2\":%u}}",
              dev->name, config->stage, event->type, event->code, event_code_name(event->code),
              event->value, event->sync ? "true" : "false", x, y, scroll_x, scroll_y, x, y,
-             scroll_x, scroll_y, state ? state->input_device_index : 0, param1, param2);
+             scroll_x, scroll_y, listener_index, active_layer, layer_state, param1, param2);
 #endif
     zmk_trace_emit_json(line);
 

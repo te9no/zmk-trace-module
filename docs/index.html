@@ -2173,7 +2173,7 @@
 
       const listeners = nodes
         .filter((node) => stringValue(node.body, "compatible") === "zmk,input-listener")
-        .map((node) => {
+        .map((node, index) => {
           const body = mergedNodeBody(text, node);
           const childNodes = parseLabeledNodes(body);
           const overrides = childNodes
@@ -2186,6 +2186,7 @@
             }));
           return {
             name: node.label || node.nodeName,
+            index,
             device: phandleValue(body, "device"),
             status: statusValue(body),
             processors: parseProcessorRefs(propertyStatement(body, "input-processors"), processorDefs),
@@ -3359,6 +3360,8 @@
           listener: message.listener || "-",
           mode: message.mode || "real",
           processors: message.processors || "-",
+          activeLayer: message.active_layer ?? message.data?.active_layer,
+          layerState: message.layer_state ?? message.data?.layer_state,
           rawValues: raw,
           outputValues: output,
           steps: (message.steps || []).map(traceStepFromJson)
@@ -3370,13 +3373,19 @@
       } else if (message.type === "input_stage") {
         const stageName = message.stage || message.processor || "stage";
         const values = normalizeTraceValues(message.after || message.before || message);
+        const data = message.data || {};
+        const listenerIndex = data.input_device_index;
+        const listenerByIndex = (state.config?.sensorInfo?.listeners || [])
+          .find((listener) => listener.index === listenerIndex);
         const shouldStart = !state.lastProcessorTrace || /raw|start|before/i.test(stageName);
         if (shouldStart) {
           state.lastProcessorTrace = {
-            device: message.device || message.data?.device || `input${message.data?.input_device_index ?? ""}` || "-",
-            listener: message.listener || "-",
+            device: message.device || data.device || listenerByIndex?.device || `input${listenerIndex ?? ""}` || "-",
+            listener: message.listener || listenerByIndex?.name || "-",
             mode: message.mode || "real",
             processors: stageName,
+            activeLayer: message.active_layer ?? data.active_layer,
+            layerState: message.layer_state ?? data.layer_state,
             rawValues: values,
             outputValues: values,
             steps: []
@@ -3390,10 +3399,14 @@
             after: eventSummary(values),
             beforeValues,
             afterValues: values,
-            notes: message.notes || []
+            notes: message.notes || [],
+            activeLayer: message.active_layer ?? data.active_layer,
+            layerState: message.layer_state ?? data.layer_state
           };
           state.lastProcessorTrace.steps.push(step);
           state.lastProcessorTrace.outputValues = values;
+          state.lastProcessorTrace.activeLayer = step.activeLayer ?? state.lastProcessorTrace.activeLayer;
+          state.lastProcessorTrace.layerState = step.layerState ?? state.lastProcessorTrace.layerState;
           state.lastProcessorTrace.processors = [
             state.lastProcessorTrace.processors,
             stageName
@@ -3418,6 +3431,9 @@
       const code = Number(parts[3]);
       const value = Number(parts[4]);
       const sync = Number(parts[5]) !== 0;
+      const inputDeviceIndex = parts.length >= 7 ? Number(parts[6]) : undefined;
+      const activeLayer = parts.length >= 8 ? Number(parts[7]) : undefined;
+      const layerState = parts.length >= 9 ? parts[8] : undefined;
       const values = { x: 0, y: 0, scroll_x: 0, scroll_y: 0 };
 
       if (type === 2) {
@@ -3431,6 +3447,11 @@
         type: "input_stage",
         stage,
         event: { type, code, value, sync },
+        data: {
+          input_device_index: Number.isFinite(inputDeviceIndex) ? inputDeviceIndex : undefined,
+          active_layer: Number.isFinite(activeLayer) ? activeLayer : undefined,
+          layer_state: layerState
+        },
         before: values,
         after: values
       };
@@ -3965,10 +3986,18 @@
         return;
       }
 
+      const layerMeta = [
+        trace.activeLayer !== undefined ? `active layer=${trace.activeLayer}` : "",
+        trace.layerState !== undefined ? `layer state=${trace.layerState}` : ""
+      ].filter(Boolean).join(" / ");
+
       els.processorTrace.appendChild(traceStepElement(
         "raw",
         `Raw input: ${trace.device} / listener=${trace.listener} / mode=${trace.mode}`,
-        `<div class="trace-values">${valuesHtml(trace.rawValues)}</div>`,
+        `
+        ${layerMeta ? `<div class="sensor-meta">${layerMeta}</div>` : ""}
+        <div class="trace-values">${valuesHtml(trace.rawValues)}</div>
+        `,
         "raw"
       ));
 
