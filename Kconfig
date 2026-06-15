@@ -24,4 +24,18 @@ config ZMK_TRACE_MIN_INTERVAL_MS
       every line. This keeps high-rate pointing devices from blocking input
       processing while USB CDC trace output is enabled.
 
+config ZMK_TRACE_QUEUE_SIZE
+    int "Trace output queue size"
+    default 16
+    help
+      Number of trace lines buffered before dropping new lines.
+
+config ZMK_TRACE_THREAD_STACK_SIZE
+    int "Trace output thread stack size"
+    default 1024
+
+config ZMK_TRACE_THREAD_PRIORITY
+    int "Trace output thread priority"
+    default 10
+
 endif
