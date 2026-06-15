@@ -16,4 +16,12 @@ config ZMK_TRACE_BUFFER_SIZE
     int "Trace line buffer size"
     default 192
 
+config ZMK_TRACE_MIN_INTERVAL_MS
+    int "Minimum interval between trace lines"
+    default 20
+    help
+      Drop trace lines emitted faster than this interval. Set to 0 to emit
+      every line. This keeps high-rate pointing devices from blocking input
+      processing while USB CDC trace output is enabled.
+
 endif
