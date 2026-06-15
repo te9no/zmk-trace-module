@@ -14,6 +14,12 @@ static const struct device *trace_uart = DEVICE_DT_GET(DT_CHOSEN(zephyr_console)
 int zmk_trace_emit_json(const char *json) {
 #if IS_ENABLED(CONFIG_ZMK_TRACE_USB_CDC) && DT_HAS_CHOSEN(zephyr_console)
     if (device_is_ready(trace_uart)) {
+        uint32_t dtr = 0;
+
+        if (uart_line_ctrl_get(trace_uart, UART_LINE_CTRL_DTR, &dtr) == 0 && !dtr) {
+            return 0;
+        }
+
         for (const char *p = json; *p != '\0'; p++) {
             uart_poll_out(trace_uart, *p);
         }
